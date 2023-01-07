@@ -444,53 +444,8 @@ public class Main {
         }
 
         if (newUser.type == UserType.Admin){
-//            Admin user = (Admin) newUser;
             newUser.Menu();
         }
-
-//            wrongPassInt++;
-//        if (triedUsers.containsKey(loginReturn.username)) {
-//
-//        }
-//        if (loginReturn.userFound) {
-//
-//        } else if (loginReturn.wrongPassword)
-//            wrongPassInt++;
-//
-//        if (lockedUsers.containsKey(loginReturn.username)) {
-//            long currentTime = System.currentTimeMillis();
-//
-//            if ( (lockedUsers.get(loginReturn.username) - currentTime) / 1000 >= 120) {
-//                lockedUsers.remove(loginReturn.username);
-//            }
-//
-//        }
-//        if (wrongPassInt == 3) {
-//            long startTime = System.currentTimeMillis();
-//            lockedUsers.put(loginReturn.username, startTime);
-//// wait for activity here
-//            long endTime = System.currentTimeMillis();
-//            long seconds = (endTime - startTime) / 1000;
-//
-//        }
-
-//        Hashtable<String, String> userCredentialsDic = new Hashtable<String, String>();
-//
-//        userCredentialsDic.put("ali", "ali Nurse");
-//        userCredentialsDic.put("admin", "admin Admin");
-//        userCredentialsDic.put("amir", "amir Patient");
-//
-//        File fileObj = fileGenerator("userCredentials.properties");
-//
-//        if (fileObj != null) {
-//
-//
-//            Properties properties = new Properties();
-//            properties.putAll(userCredentialsDic);
-//
-//            properties.store(new FileOutputStream("userCredentials.properties"), null);
-//
-//        }
     }
 
 
