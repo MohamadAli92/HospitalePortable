@@ -340,8 +340,7 @@ public class Main {
         Hashtable<String, String[]> userCredentialsDicSplit = getUserCredentials();
 
 
-        System.out.println("Welcome :)\n" +
-                            "Please Enter Username: ");
+        System.out.println("Please Enter Username: ");
 
         String username = scanner.nextLine();
 
@@ -376,6 +375,7 @@ public class Main {
 
 //                        user = User.getUserObjFromFile(username, UserType.valueOf(userType));
                         user = new Admin("admin", "").getUserObj(username);
+                        break;
 
                     } else wrongPassword = true;
 
@@ -389,6 +389,8 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
 
+        System.out.println("Welcome :)\n");
+
         Hashtable<String, ArrayList<Object>> triedUsers = new Hashtable<String, ArrayList<Object>>();
 
         User newUser = null;
@@ -399,17 +401,36 @@ public class Main {
 
             if (!loginReturn.userFound) {
                 System.out.println("No user found with this username!");
-            } else if (loginReturn.wrongPassword) {
+            } else if (loginReturn.wrongPassword || (triedUsers.containsKey(loginReturn.username) && (Integer) triedUsers.get(loginReturn.username).get(0) >= 3)) {
+
                 if (triedUsers.containsKey(loginReturn.username)) {
+
+                    if (loginReturn.wrongPassword)
+                        System.out.println("Wrong password!\n");
+
+                    triedUsers.get(loginReturn.username).set(0, (Integer) triedUsers.get(loginReturn.username).get(0) + 1);
+
                     if ((Integer) triedUsers.get(loginReturn.username).get(0) == 3) {
+
+                        triedUsers.get(loginReturn.username).set(1, System.currentTimeMillis());
+
+                        System.out.println("Your account has been locked for 2 minutes.\n");
+
+                    } else if ((Integer) triedUsers.get(loginReturn.username).get(0) > 3) {
+
                         long currentTime = System.currentTimeMillis();
-                        if ( ((Long) triedUsers.get(loginReturn.username).get(1) - currentTime) / 1000 >= 120) {
+
+                        long timeDifference = (currentTime - (Long) triedUsers.get(loginReturn.username).get(1));
+
+                        if ( timeDifference / 1000 >= 120) {
                             triedUsers.remove(loginReturn.username);
                         } else {
-                            System.out.println("Please try again later.");
+                            System.out.println("Please try " + (120 - (timeDifference / 1000)) + " second later.\n");
                         }
                     }
+
                 } else {
+                    System.out.println("Wrong password!\n");
                     ArrayList<Object> list = new ArrayList<Object>();
                     list.add(1);
                     list.add(System.currentTimeMillis());
@@ -423,8 +444,8 @@ public class Main {
         }
 
         if (newUser.type == UserType.Admin){
-            Admin user = (Admin) newUser;
-            user.Menu();
+//            Admin user = (Admin) newUser;
+            newUser.Menu();
         }
 
 //            wrongPassInt++;
