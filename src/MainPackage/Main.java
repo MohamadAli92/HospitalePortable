@@ -25,6 +25,7 @@ class loginReturn {
 
 public class Main {
 
+    static sessionData sessionData;
 
     static Scanner scanner = new Scanner(System.in);
 
@@ -297,38 +298,87 @@ public class Main {
     public static void twoFilesGenerator() {
 
         try {
+            // File initialization segment
             File crFileObj = new File("userCredentials.properties");
+            File infFileObj = new File("usersInformation.properties");
 
-
-            if (!crFileObj.exists()){
-                crFileObj.createNewFile();
+            // Check files segment
+            if (crFileObj.length() == 0){
                 FileWriter writer = new FileWriter("userCredentials.properties");
                 writer.write("admin=admin Admin");
                 writer.close();
             }
-        } catch (IOException e) {
-            System.out.println("An error occurred.");
-            e.printStackTrace();
-        }
-
-        try {
-            File infFileObj = new File("usersInformation.properties");
-
-
-            if (!infFileObj.exists()){
-                infFileObj.createNewFile();
+            if (infFileObj.length() == 0){
                 FileWriter writer = new FileWriter("usersInformation.properties");
                 writer.write("admin=admin.admin.admin.000.Admin.");
                 writer.close();
             }
+
         } catch (IOException e) {
             System.out.println("An error occurred.");
             e.printStackTrace();
         }
 
 
-
-
+//        //UserCredentials File
+//
+//        try {
+//            File crFileObj = new File("userCredentials.properties");
+//
+//
+//            if (!crFileObj.exists()){
+//                crFileObj.createNewFile();
+//                FileWriter writer = new FileWriter("userCredentials.properties");
+//                writer.write("admin=admin Admin");
+//                writer.close();
+//            }
+//        } catch (IOException e) {
+//            System.out.println("An error occurred.");
+//            e.printStackTrace();
+//        }
+//
+//        //UserInformation File
+//
+//        try {
+//            File infFileObj = new File("usersInformation.properties");
+//
+//
+//            if (!infFileObj.exists()){
+//                infFileObj.createNewFile();
+//                FileWriter writer = new FileWriter("usersInformation.properties");
+//                writer.write("admin=admin.admin.admin.000.Admin.");
+//                writer.close();
+//            }
+//        } catch (IOException e) {
+//            System.out.println("An error occurred.");
+//            e.printStackTrace();
+//        }
+//
+//        //Links File
+//
+//        try {
+//            File linksFileObj = new File("links.properties");
+//
+//            if (!linksFileObj.exists()){
+//                linksFileObj.createNewFile();
+//            }
+//        } catch (IOException e) {
+//            System.out.println("An error occurred.");
+//            e.printStackTrace();
+//        }
+//
+//        //DataArrays File
+//
+//        try {
+//            File dataArraysFileObj = new File("dataArrays.properties");
+//
+//            if (!dataArraysFileObj.exists()){
+//                dataArraysFileObj.createNewFile();
+//            }
+//        } catch (IOException e) {
+//            System.out.println("An error occurred.");
+//            e.printStackTrace();
+//        }
 
     }
 
@@ -369,7 +419,7 @@ public class Main {
                     userFound = true;
                     String userPassword = userCredentialsDicSplit.get(checkUsername)[0];
 
-                    String userType = userCredentialsDicSplit.get(checkUsername)[1];
+//                    String userType = userCredentialsDicSplit.get(checkUsername)[1];
 
                     if (userPassword.equals(password)) {
 
@@ -388,6 +438,14 @@ public class Main {
     }
 
     public static void main(String[] args) throws IOException {
+
+        try {
+            Main.sessionData = MainPackage.sessionData.getSessionData();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         System.out.println("Welcome :)\n");
 
@@ -443,9 +501,11 @@ public class Main {
 
         }
 
-        if (newUser.type == UserType.Admin){
-            newUser.Menu();
-        }
+//        if (newUser.type == UserType.Admin){
+//
+//        }
+
+        newUser.Menu();
     }
 
 

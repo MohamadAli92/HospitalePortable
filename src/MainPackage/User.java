@@ -1,10 +1,8 @@
 package MainPackage;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Hashtable;
-import java.util.Properties;
-import java.util.Random;
+import java.lang.reflect.Array;
+import java.util.*;
 
 abstract public class User {
 
@@ -15,6 +13,8 @@ abstract public class User {
     UserType type;
     String username;
     String password;
+    Hashtable<User, String> messages;
+
 
 //    static Hashtable<String, String> getUserInformationFromFile(String username) throws IOException {
 //
@@ -67,6 +67,7 @@ abstract public class User {
         this.id = id;
         this.username = username;
         this.password = password;
+        this.messages = new Hashtable<User, String>();
 
     }
 
@@ -120,6 +121,17 @@ abstract public class User {
 
     abstract Hashtable<String, String> getUserInformationDic();
 
+    void getMessage(User sourceUser, String message) {
+
+        messages.put(sourceUser, message);
+
+    }
+
+    protected void sendMessage(User destUser, String message) {
+
+        destUser.getMessage(this, message);
+    }
+
 }
 
 class Admin extends User {
@@ -139,6 +151,21 @@ class Admin extends User {
 
     Admin() {
         super("admin", "admin", UserType.Admin, "admin", "admin", "admin", "000");
+
+    }
+
+    User getUserById(String id) {
+
+        User foundUser = null;
+
+        for (User user : allUsers) {
+            if (user.id.equals(id)){
+                foundUser = user;
+                break;
+            }
+        }
+
+        return foundUser;
 
     }
 
@@ -246,7 +273,7 @@ class Admin extends User {
         }
     }
 
-    private static boolean checkPassword(String newPass) {
+    public static boolean checkPassword(String newPass) {
         String[] characters = {"!", "@", "#", "$", "%", "&", "*"};
 
 
@@ -439,15 +466,16 @@ class Admin extends User {
         } else if (choice.equals("5")) {
 
             String password = " ";
-            while (password.contains(" ") && !checkPassword(password)) {
-                System.out.println("Enter new password:");
+            while (password.contains(" ") || !checkPassword(password)) {
+                System.out.println("Please enter Password:");
                 password = Main.scanner.nextLine();
-                if (password.contains(" ") && !checkPassword(password))
+                if (password.contains(" ") || !checkPassword(password))
                     System.out.println("password shouldn't include whitespaces and must contains\n" +
                             "at least one of these characters!: @#$%&*");
             }
 
             this.changeUserPassword(username, password);
+            this.updateCredentialsFile();
 
         }
 
@@ -479,18 +507,234 @@ class Physician extends User {
 
     String field;
     String record;
+//    ArrayList<Patient> patients;
+    Hashtable<Patient, Date> patients;
 
     Physician(String username, String password, String name, String lastName, String sex, String id, String field, String record){
         super(username, password, UserType.Physician, name, lastName, sex, id);
 
         this.field = field;
         this.record = record;
+        patients = new Hashtable<Patient, Date>();
 
     }
 
-    @Override
-    void Menu() {
+    private void pickPatient() {
 
+        ArrayList<Patient> availablePatients = new ArrayList<Patient>();
+
+        for (Patient checkingPatient : Main.sessionData.allPatients) {
+            if (!Main.sessionData.linkedPhysicianToPatients.containsValue(checkingPatient)) {
+                if (Main.sessionData.specializations.get(this.field).contains(checkingPatient.disease)) {
+                    availablePatients.add(checkingPatient);
+                }
+            }
+        }
+
+        int n = 1;
+
+        while (true) {
+            System.out.println("Please enter one of these numbers or enter 0 to exit:");
+            for (Patient patient : availablePatients) {
+                System.out.println(n + "- " + patient.name + patient.lastName);
+                n++;
+            }
+            String choice = Main.scanner.nextLine();
+            if (choice.equals("0")) {
+                break;
+            } else {
+                Patient addingPatient = availablePatients.get(Integer.getInteger(choice));
+//                this.patients.add(addingPatient);
+                this.patients.put(addingPatient, new Date());
+                Main.sessionData.linkedPhysicianToPatients.get(this).add(addingPatient);
+//                ArrayList<Patient> thisPhysicianPatients = sessionData.linkedPhysicianToPatients.get(this);
+//                thisPhysicianPatients.add(addingPatient);
+//                sessionData.linkedPhysicianToPatients.put(this, thisPhysicianPatients);
+
+            }
+        }
+
+
+    }
+
+    private void listAllPatients() {
+
+        int n = 1;
+
+        if (patients.isEmpty()){
+            System.out.println("No patient has been added!");
+        } else {
+            for (Patient patient : Main.sessionData.allPatients) {
+                System.out.println(n + "- " + patient.name + " " + patient.lastName);
+                System.out.println(patient.disease);
+                System.out.println(patients.get(patient));
+                n++;
+            }
+        }
+
+    }
+
+    private void viewPatientInfo(String sample) {
+
+        ArrayList<Patient> foundPatients = new ArrayList<Patient>();
+
+        if (sample.contains("-")) {
+
+            String[] lastNameId = sample.split("-", -2);
+            String lastName = lastNameId[0];
+            String id = lastNameId[1];
+
+            for (Patient patient : Main.sessionData.allPatients) {
+
+                if (patient.lastName.equals(lastName) && patient.id.equals(id)) {
+
+                    foundPatients.add(patient);
+
+                }
+
+            }
+
+        } else {
+
+            for (Patient patient : Main.sessionData.allPatients) {
+
+                if (patient.name.equals(name)) {
+
+                    foundPatients.add(patient);
+
+                }
+
+            }
+
+        }
+
+        System.out.println("Found " + foundPatients.size() + " results");
+        for (Patient patient : foundPatients) {
+            System.out.println(patient.name + "/" +
+                                patient.lastName + "/" +
+                                patient.disease + "/" +
+                                patient.age + "/" +
+                                patient.mode);
+        }
+
+    }
+
+    private void writeMedicine() {
+
+        int n = 1;
+
+        while (true) {
+            System.out.println("Please enter one of these numbers or enter 0 to exit:");
+            for (String message : messages.values()) {
+                System.out.println(n + "- " + message);
+                n++;
+            }
+            String choice = Main.scanner.nextLine();
+            if (choice.equals("0")) {
+                break;
+            } else {
+                List<User> users = new ArrayList<User>(messages.keySet());
+                User destUser = users.get(Integer.getInteger(choice));
+
+                if (destUser.type == UserType.Nurse) {
+
+                    System.out.println("Please write medicines:");
+                    String medicines = Main.scanner.nextLine();
+
+                    this.sendMessage(destUser, medicines);
+
+                    this.messages.remove(destUser);
+
+                }
+
+//                Patient addingPatient = availablePatients.get(Integer.getInteger(choice));
+////                this.patients.add(addingPatient);
+//                this.patients.put(addingPatient, new Date());
+//                sessionData.linkedPhysicianToPatients.put(this, addingPatient);
+
+            }
+        }
+
+//        for (String message : messages.values()) {
+//
+//        }
+    }
+
+    private void dischargePatient(String id) {
+
+        for (Patient dischargingPatient : patients.keySet()) {
+            if (dischargingPatient.id.equals(id)) {
+
+                String archiveString = "Patient " + "(" + dischargingPatient.name + " " + dischargingPatient.lastName + ")" +
+                        " that was entered at (" + patients.get(dischargingPatient) + ") with problem (" +
+                        dischargingPatient.disease + ") " + "discharged at (" + new Date() + ") and was a (" +
+                        dischargingPatient.mode + ") patient;";
+
+                Main.sessionData.patientsArchive.add(archiveString);
+
+//                sessionData.allPatients.remove(dischargingPatient);
+
+                patients.remove(dischargingPatient);
+
+                Main.sessionData.linkedPhysicianToPatients.get(this).remove(dischargingPatient);
+
+                Main.sessionData.dischargedPatients.add(dischargingPatient);
+            }
+        }
+    }
+
+
+    @Override
+    void Menu() throws IOException {
+
+        System.out.println("Select one of options:\n" +
+                "1-Pick Patient\n" +
+                "2-List All Patients\n" +
+                "3-View Patient Info\n" +
+                "4-Write Medicine\n" +
+                "5-Discharge Patient\n" +
+                "6-Change Password");
+
+        String choice = Main.scanner.nextLine();
+
+        if (choice.equals("1")) {
+
+            this.pickPatient();
+
+        } else if (choice.equals("2")) {
+
+            this.listAllPatients();
+
+        } else if (choice.equals("3")) {
+
+            System.out.println("Enter patient's name or enter lastname-id:");
+            this.viewPatientInfo(Main.scanner.nextLine());
+
+        } else if (choice.equals("4")) {
+
+            this.writeMedicine();
+
+        } else if (choice.equals("5")) {
+
+            System.out.println("Enter patient's id:");
+            this.dischargePatient(Main.scanner.nextLine());
+
+        } else if (choice.equals("6")) {
+
+            String password = " ";
+            while (password.contains(" ") || !Admin.checkPassword(password)) {
+                System.out.println("Please enter Password:");
+                password = Main.scanner.nextLine();
+                if (password.contains(" ") || !Admin.checkPassword(password))
+                    System.out.println("password shouldn't include whitespaces and must contains\n" +
+                            "at least one of these characters!: @#$%&*");
+            }
+
+            Admin newAdmin = new Admin("admin", "admin");
+            newAdmin.changeUserPassword(this.username, password);
+            newAdmin.updateCredentialsFile();
+
+        }
     }
 
     @Override
@@ -512,6 +756,7 @@ class Physician extends User {
 
         return informationDic;
     }
+
 
 }
 
