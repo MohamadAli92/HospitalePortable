@@ -318,7 +318,7 @@ public class Main {
             if (!infFileObj.exists()){
                 infFileObj.createNewFile();
                 FileWriter writer = new FileWriter("usersInformation.properties");
-                writer.write("admin=admin.admin.admin.111.Admin.");
+                writer.write("admin=admin.admin.admin.000.Admin.");
                 writer.close();
             }
         } catch (IOException e) {

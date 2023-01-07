@@ -4,6 +4,7 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Properties;
+import java.util.Random;
 
 abstract public class User {
 
@@ -245,6 +246,19 @@ class Admin extends User {
         }
     }
 
+    private static boolean checkPassword(String newPass) {
+        String[] characters = {"!", "@", "#", "$", "%", "&", "*"};
+
+
+        for (String character : characters) {
+            if (newPass.contains(character))
+                return true;
+        }
+
+        return false;
+
+    }
+
     private void searchUser(String sample) throws IOException {
 
 //        Hashtable<String, Hashtable<String, String>> allUsers = Main.getUsersInformationFromFile();
@@ -260,10 +274,24 @@ class Admin extends User {
     }
 
     private void addUser(String userType) throws IOException {
-        System.out.println("Please enter Username:");
-        String username = Main.scanner.nextLine();
-        System.out.println("Please enter Password:");
-        String password = Main.scanner.nextLine();
+
+        String username = " ";
+        while (username.contains(" ")) {
+            System.out.println("Please enter Username:");
+            username = Main.scanner.nextLine();
+            if (username.contains(" "))
+                System.out.println("username shouldn't include whitespaces!");
+        }
+
+        String password = " ";
+        while (password.contains(" ") || !checkPassword(password)) {
+            System.out.println("Please enter Password:");
+            password = Main.scanner.nextLine();
+            if (password.contains(" ") || !checkPassword(password))
+                System.out.println("password shouldn't include whitespaces and must contains\n" +
+                                   "at least one of these characters!: @#$%&*");
+        }
+
 
         this.addUserPassword(username, password, userType);
         this.updateCredentialsFile();
@@ -272,8 +300,24 @@ class Admin extends User {
         String name = Main.scanner.nextLine();
         System.out.println("Please enter lastName:");
         String lastName = Main.scanner.nextLine();
-        System.out.println("Please enter id:");
-        String id = Main.scanner.nextLine();
+
+        Random r = new Random();
+        int low = 100;
+        int high = 1000;
+        String id = Integer.toString(r.nextInt(high-low) + low);
+
+        while (true) {
+            boolean uniqueId = true;
+            for (User user : allUsers) {
+                if (user.id.equals(id)){
+                    uniqueId = false;
+                    break;
+                }
+            }
+            if (uniqueId) break;
+            else id = Integer.toString(r.nextInt(high-low) + low);
+        }
+
         System.out.println("Please enter sex:");
         String sex = Main.scanner.nextLine();
 
@@ -297,8 +341,19 @@ class Admin extends User {
             String age = Main.scanner.nextLine();
             System.out.println("Please enter disease:");
             String disease = Main.scanner.nextLine();
-            System.out.println("Please enter mode:");
-            String mode = Main.scanner.nextLine();
+
+            String mode = " ";
+            ArrayList<String> modes = new ArrayList<String>();
+            modes.add("Vip");
+            modes.add("Normal");
+            modes.add("Insurance");
+
+            while (!modes.contains(mode)) {
+                System.out.println("Please enter mode:");
+                mode = Main.scanner.nextLine();
+                if (!modes.contains(mode))
+                    System.out.println("invalid mode!");
+            }
 
             newUser = new Patient(username, password, age, disease, mode, name, lastName, sex, id);
 
@@ -382,8 +437,18 @@ class Admin extends User {
             this.updateInformationFile();
             this.updateCredentialsFile();
         } else if (choice.equals("5")) {
-            System.out.println("Enter new password:");
-            this.changeUserPassword(username, Main.scanner.nextLine());
+
+            String password = " ";
+            while (password.contains(" ") && !checkPassword(password)) {
+                System.out.println("Enter new password:");
+                password = Main.scanner.nextLine();
+                if (password.contains(" ") && !checkPassword(password))
+                    System.out.println("password shouldn't include whitespaces and must contains\n" +
+                            "at least one of these characters!: @#$%&*");
+            }
+
+            this.changeUserPassword(username, password);
+
         }
 
 
