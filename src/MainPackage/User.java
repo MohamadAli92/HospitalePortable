@@ -1,7 +1,7 @@
 package MainPackage;
 
 import java.io.*;
-import java.lang.reflect.Array;
+//import java.lang.reflect.Array;
 import java.util.*;
 
 abstract public class User {
@@ -261,7 +261,7 @@ class Admin extends User {
 
 //    private void
 
-    private void listAllUsers() throws IOException {
+    private void listAllUsers(){
 
 //        Hashtable<String, Hashtable<String, String>> allUsers = Main.getUsersInformationFromFile();
 
@@ -286,7 +286,7 @@ class Admin extends User {
 
     }
 
-    private void searchUser(String sample) throws IOException {
+    private void searchUser(String sample) {
 
 //        Hashtable<String, Hashtable<String, String>> allUsers = Main.getUsersInformationFromFile();
 
@@ -434,50 +434,61 @@ class Admin extends User {
 
     @Override
     void Menu() throws IOException {
-        System.out.println("Select one of options:\n" +
-                            "1-list all users\n" +
-                            "2-search user by last name\n" +
-                            "3-add user\n" +
-                            "4-delete user\n\n" +
-                            "5-change password");
 
-        String choice = Main.scanner.nextLine();
+        while (true) {
 
-        if (choice.equals("1")) {
-            this.listAllUsers();
-        } else if (choice.equals("2")) {
-            System.out.println("Enter search sample:");
-            this.searchUser(Main.scanner.nextLine());
-        } else if (choice.equals("3")) {
+            System.out.println("Select one of options:\n" +
+                    "1-list all users\n" +
+                    "2-search user by last name\n" +
+                    "3-add user\n" +
+                    "4-delete user\n" +
+                    "5-change password\n" +
+                    "0-Exit to login menu");
 
-            System.out.println("Select one of these user types:\n" +
-                    "1-Physician\n" +
-                    "2-Nurse\n" +
-                    "3-Patient\n");
+            String choice = Main.scanner.nextLine();
 
-            String userType = Main.scanner.nextLine();
+            if (choice.equals("1")) {
+                this.listAllUsers();
+            } else if (choice.equals("2")) {
+                System.out.println("Enter search sample:");
+                this.searchUser(Main.scanner.nextLine());
+            } else if (choice.equals("3")) {
 
-            this.addUser(userType);
-        } else if (choice.equals("4")) {
-            System.out.println("Enter an id number:");
-            this.deleteUser(Main.scanner.nextLine());
-            this.updateInformationFile();
-            this.updateCredentialsFile();
-        } else if (choice.equals("5")) {
+                System.out.println("Select one of these user types:\n" +
+                        "1-Physician\n" +
+                        "2-Nurse\n" +
+                        "3-Patient\n");
 
-            String password = " ";
-            while (password.contains(" ") || !checkPassword(password)) {
-                System.out.println("Please enter Password:");
-                password = Main.scanner.nextLine();
-                if (password.contains(" ") || !checkPassword(password))
-                    System.out.println("password shouldn't include whitespaces and must contains\n" +
-                            "at least one of these characters!: @#$%&*");
+                String userType = Main.scanner.nextLine();
+
+                this.addUser(userType);
+            } else if (choice.equals("4")) {
+                System.out.println("Enter an id number:");
+                this.deleteUser(Main.scanner.nextLine());
+                this.updateInformationFile();
+                this.updateCredentialsFile();
+            } else if (choice.equals("5")) {
+
+                String password = " ";
+                while (password.contains(" ") || !checkPassword(password)) {
+                    System.out.println("Please enter Password:");
+                    password = Main.scanner.nextLine();
+                    if (password.contains(" ") || !checkPassword(password))
+                        System.out.println("password shouldn't include whitespaces and must contains\n" +
+                                "at least one of these characters!: @#$%&*");
+                }
+
+                this.changeUserPassword(username, password);
+                this.updateCredentialsFile();
+
+            } else if (choice.equals("0")) {
+                break;
+            } else {
+                System.out.println("Invalid input!");
             }
 
-            this.changeUserPassword(username, password);
-            this.updateCredentialsFile();
-
         }
+
 
 
 
@@ -507,7 +518,6 @@ class Physician extends User {
 
     String field;
     String record;
-//    ArrayList<Patient> patients;
     Hashtable<Patient, Date> patients;
 
     Physician(String username, String password, String name, String lastName, String sex, String id, String field, String record){
@@ -515,45 +525,77 @@ class Physician extends User {
 
         this.field = field;
         this.record = record;
-        patients = new Hashtable<Patient, Date>();
+        if (Main.sessionData != null)
+            patients = Main.sessionData.allPatientsDate;
+        else patients = null;
 
     }
 
-    private void pickPatient() {
-
-        ArrayList<Patient> availablePatients = new ArrayList<Patient>();
-
-        for (Patient checkingPatient : Main.sessionData.allPatients) {
-            if (!Main.sessionData.linkedPhysicianToPatients.containsValue(checkingPatient)) {
-                if (Main.sessionData.specializations.get(this.field).contains(checkingPatient.disease)) {
-                    availablePatients.add(checkingPatient);
-                }
-            }
-        }
-
-        int n = 1;
+    private void pickPatient() throws IOException {
 
         while (true) {
+
+            ArrayList<Patient> availablePatients = new ArrayList<Patient>();
+
+            for (Patient checkingPatient : Main.sessionData.allPatients) {
+
+                boolean isFree = true;
+
+                for (Physician checkingPhysician : Main.sessionData.linkedPhysicianToPatients.keySet()) {
+
+                    ArrayList<String> ids = new ArrayList<String>();
+
+                    for (Patient patient : Main.sessionData.linkedPhysicianToPatients.get(checkingPhysician)) {
+                        ids.add(patient.id);
+                    }
+
+                    if (ids.contains(checkingPatient.id)) {
+                        isFree = false;
+                        break;
+                    }
+
+                }
+
+                if (isFree)
+                    if (Main.sessionData.specializations.get(this.field).contains(checkingPatient.disease))
+                        availablePatients.add(checkingPatient);
+
+            }
+
+            int n = 1;
+
             System.out.println("Please enter one of these numbers or enter 0 to exit:");
             for (Patient patient : availablePatients) {
-                System.out.println(n + "- " + patient.name + patient.lastName);
+                System.out.println(n + "- " + patient.name + " " + patient.lastName);
                 n++;
             }
             String choice = Main.scanner.nextLine();
             if (choice.equals("0")) {
                 break;
             } else {
-                Patient addingPatient = availablePatients.get(Integer.getInteger(choice));
-//                this.patients.add(addingPatient);
+                int choiceInt = Integer.parseInt(choice)-1;
+                Patient addingPatient = availablePatients.get(choiceInt);
                 this.patients.put(addingPatient, new Date());
-                Main.sessionData.linkedPhysicianToPatients.get(this).add(addingPatient);
-//                ArrayList<Patient> thisPhysicianPatients = sessionData.linkedPhysicianToPatients.get(this);
-//                thisPhysicianPatients.add(addingPatient);
-//                sessionData.linkedPhysicianToPatients.put(this, thisPhysicianPatients);
+                this.patients.putAll(Main.sessionData.allPatientsDate);
+
+                boolean userFound = false;
+
+                assert Main.sessionData.linkedPhysicianToPatients != null;
+                for (Physician physician : Main.sessionData.linkedPhysicianToPatients.keySet()) {
+                    if (physician.id.equals(this.id)) {
+                        userFound = true;
+                        Main.sessionData.linkedPhysicianToPatients.get(physician).add(addingPatient);
+                    }
+                } if (!userFound){
+                    ArrayList<Patient> addingList = new ArrayList<Patient>();
+                    addingList.add(addingPatient);
+                    Main.sessionData.linkedPhysicianToPatients.put(this, addingList);
+                }
 
             }
         }
 
+        Main.sessionData.saveFiles();
 
     }
 
@@ -561,13 +603,13 @@ class Physician extends User {
 
         int n = 1;
 
-        if (patients.isEmpty()){
+        if (Main.sessionData.allPatients.isEmpty()){
             System.out.println("No patient has been added!");
         } else {
-            for (Patient patient : Main.sessionData.allPatients) {
-                System.out.println(n + "- " + patient.name + " " + patient.lastName);
-                System.out.println(patient.disease);
-                System.out.println(patients.get(patient));
+            for (Patient patient : patients.keySet()) {
+                System.out.println(n + " - " + patient.name + " " + patient.lastName);
+                System.out.println("    " + patient.disease);
+                System.out.println("    " + patients.get(patient));
                 n++;
             }
         }
@@ -598,7 +640,7 @@ class Physician extends User {
 
             for (Patient patient : Main.sessionData.allPatients) {
 
-                if (patient.name.equals(name)) {
+                if (patient.name.equals(sample)) {
 
                     foundPatients.add(patient);
 
@@ -660,7 +702,7 @@ class Physician extends User {
 //        }
     }
 
-    private void dischargePatient(String id) {
+    private void dischargePatient(String id) throws IOException {
 
         for (Patient dischargingPatient : patients.keySet()) {
             if (dischargingPatient.id.equals(id)) {
@@ -670,15 +712,34 @@ class Physician extends User {
                         dischargingPatient.disease + ") " + "discharged at (" + new Date() + ") and was a (" +
                         dischargingPatient.mode + ") patient;";
 
-                Main.sessionData.patientsArchive.add(archiveString);
+                System.out.println(archiveString);
+
+//                Main.sessionData.patientsArchive.add(archiveString);
 
 //                sessionData.allPatients.remove(dischargingPatient);
 
                 patients.remove(dischargingPatient);
 
-                Main.sessionData.linkedPhysicianToPatients.get(this).remove(dischargingPatient);
+                for (Physician physician : Main.sessionData.linkedPhysicianToPatients.keySet()) {
+                    if (physician.id.equals(this.id)){
+                        for (Patient patient : Main.sessionData.linkedPhysicianToPatients.get(physician)) {
+                            if (patient.id.equals(dischargingPatient.id)) {
+                                Main.sessionData.linkedPhysicianToPatients.get(physician).remove(patient);
+                                break;
+                            }
+                        }
+                    }
+//                        Main.sessionData.linkedPhysicianToPatients.get(physician).remove(dischargingPatient);
+                }
+//                Main.sessionData.linkedPhysicianToPatients.get(this).remove(dischargingPatient);
 
                 Main.sessionData.dischargedPatients.add(dischargingPatient);
+                Main.sessionData.patientsArchive.add(archiveString);
+                this.patients.putAll(Main.sessionData.allPatientsDate);
+
+                Main.sessionData.saveFiles();
+
+                break;
             }
         }
     }
@@ -687,54 +748,64 @@ class Physician extends User {
     @Override
     void Menu() throws IOException {
 
-        System.out.println("Select one of options:\n" +
-                "1-Pick Patient\n" +
-                "2-List All Patients\n" +
-                "3-View Patient Info\n" +
-                "4-Write Medicine\n" +
-                "5-Discharge Patient\n" +
-                "6-Change Password");
+        while (true) {
 
-        String choice = Main.scanner.nextLine();
+            System.out.println("Select one of options:\n" +
+                    "1-Pick Patient\n" +
+                    "2-List All Patients\n" +
+                    "3-View Patient Info\n" +
+                    "4-Write Medicine\n" +
+                    "5-Discharge Patient\n" +
+                    "6-Change Password\n" +
+                    "0-Exit to login menu");
 
-        if (choice.equals("1")) {
+            String choice = Main.scanner.nextLine();
 
-            this.pickPatient();
+            if (choice.equals("1")) {
 
-        } else if (choice.equals("2")) {
+                this.pickPatient();
 
-            this.listAllPatients();
+            } else if (choice.equals("2")) {
 
-        } else if (choice.equals("3")) {
+                this.listAllPatients();
 
-            System.out.println("Enter patient's name or enter lastname-id:");
-            this.viewPatientInfo(Main.scanner.nextLine());
+            } else if (choice.equals("3")) {
 
-        } else if (choice.equals("4")) {
+                System.out.println("Enter patient's name or enter lastname-id:");
+                this.viewPatientInfo(Main.scanner.nextLine());
 
-            this.writeMedicine();
+            } else if (choice.equals("4")) {
 
-        } else if (choice.equals("5")) {
+                this.writeMedicine();
 
-            System.out.println("Enter patient's id:");
-            this.dischargePatient(Main.scanner.nextLine());
+            } else if (choice.equals("5")) {
 
-        } else if (choice.equals("6")) {
+                System.out.println("Enter patient's id:");
+                this.dischargePatient(Main.scanner.nextLine());
 
-            String password = " ";
-            while (password.contains(" ") || !Admin.checkPassword(password)) {
-                System.out.println("Please enter Password:");
-                password = Main.scanner.nextLine();
-                if (password.contains(" ") || !Admin.checkPassword(password))
-                    System.out.println("password shouldn't include whitespaces and must contains\n" +
-                            "at least one of these characters!: @#$%&*");
+            } else if (choice.equals("6")) {
+
+                String password = " ";
+                while (password.contains(" ") || !Admin.checkPassword(password)) {
+                    System.out.println("Please enter Password:");
+                    password = Main.scanner.nextLine();
+                    if (password.contains(" ") || !Admin.checkPassword(password))
+                        System.out.println("password shouldn't include whitespaces and must contains\n" +
+                                "at least one of these characters!: @#$%&*");
+                }
+
+                Admin newAdmin = new Admin("admin", "admin");
+                newAdmin.changeUserPassword(this.username, password);
+                newAdmin.updateCredentialsFile();
+
+            } else if (choice.equals("0")) {
+                break;
+            } else {
+                System.out.println("Invalid input!\n");
             }
 
-            Admin newAdmin = new Admin("admin", "admin");
-            newAdmin.changeUserPassword(this.username, password);
-            newAdmin.updateCredentialsFile();
-
         }
+
     }
 
     @Override

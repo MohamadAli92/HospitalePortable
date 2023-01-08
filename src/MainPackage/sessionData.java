@@ -1,6 +1,8 @@
 package MainPackage;
 
 import java.io.*;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class sessionData {
@@ -8,9 +10,10 @@ public class sessionData {
     private static sessionData newSessionData = null;
 
     Hashtable<Physician, ArrayList<Patient>> linkedPhysicianToPatients;
-    ArrayList<Patient> allPatients;
-    ArrayList<String> patientsArchive;
-    ArrayList<Patient> dischargedPatients;
+    ArrayList<Patient> allPatients = new ArrayList<Patient>();
+    Hashtable<Patient, Date> allPatientsDate;
+    ArrayList<String> patientsArchive = new ArrayList<String>();
+    ArrayList<Patient> dischargedPatients = new ArrayList<Patient>();
     Hashtable<String, ArrayList<String>> specializations;
 
 
@@ -29,7 +32,7 @@ public class sessionData {
             Properties properties = new Properties();
             properties.load(new FileInputStream(fileObj));
 
-            Admin admin = new Admin();
+            Admin admin = new Admin("admin", "admin");
 
             for (String physicianId : properties.stringPropertyNames()) {
 
@@ -39,7 +42,8 @@ public class sessionData {
                 Physician physician = (Physician) admin.getUserById(physicianId);
 
                 for (String id : patientsId)
-                    patients.add((Patient) admin.getUserById(id));
+                    if (!id.isEmpty())
+                        patients.add((Patient) admin.getUserById(id));
 
                 tempLinkedPhysicianToPatients.put(physician, patients);
 
@@ -48,6 +52,37 @@ public class sessionData {
         }
 
         return tempLinkedPhysicianToPatients;
+
+
+    }
+
+    private Hashtable<Patient, Date> readFromDatesFile() throws IOException, ParseException {
+
+        File fileObj = Main.fileGenerator("dates.properties");
+
+        Hashtable<Patient, Date> tempPatientsDate = new Hashtable<Patient, Date>();
+
+        if (fileObj != null) {
+
+
+            Properties properties = new Properties();
+            properties.load(new FileInputStream(fileObj));
+
+            Admin admin = new Admin("admin", "admin");
+
+            for (String patientId : properties.stringPropertyNames()) {
+
+                Patient patient = (Patient) admin.getUserById(patientId);
+
+//                Date date=new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy").parse((String) properties.get(patientId));
+
+                tempPatientsDate.put(patient, new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy").parse((String) properties.get(patientId)));
+
+            }
+
+        }
+
+        return tempPatientsDate;
 
 
     }
@@ -92,7 +127,13 @@ public class sessionData {
 
                     String[] patientsArchiveArray = properties.get(type).toString().split("\\.", -2);
 
-                    patientsArchive.addAll(Arrays.asList(patientsArchiveArray));
+                    for (String patientArchive : patientsArchiveArray) {
+
+                        if (!patientArchive.isEmpty())
+                            patientsArchive.add(patientArchive);
+                    }
+
+//                    patientsArchive.addAll(Arrays.asList(patientsArchiveArray));
 
                 } else {
 
@@ -100,12 +141,12 @@ public class sessionData {
 
                     for (String dischargedPatientId : dischargedPatientsId) {
 
-                        dischargedPatients.add((Patient) admin.getUserById(dischargedPatientId));
+                        if (!dischargedPatientId.isEmpty())
+                            dischargedPatients.add((Patient) admin.getUserById(dischargedPatientId));
 
                     }
 
                 }
-
 
             }
 
@@ -141,10 +182,11 @@ public class sessionData {
 
     }
 
-    private sessionData() throws IOException {
+    private sessionData() throws IOException, ParseException {
 
         specializations = this.readFromConfigFile();
         linkedPhysicianToPatients = this.readFromLinksFile();
+        allPatientsDate = this.readFromDatesFile();
         this.readThreeArrays();
 
     }
@@ -172,32 +214,35 @@ public class sessionData {
 
             }
 
-//            for (String physicianId : properties.stringPropertyNames()) {
-
-//                ArrayList<String> patientsId = new ArrayList<String>();
-
-
-//                for (Physician addingPhysician : linkedPhysicianToPatients.keySet()) {
-
-
-
-
-//                }
-
-
-//                ArrayList<Patient> patients = new ArrayList<Patient>();
-//                Physician physician = (Physician) admin.getUserById(physicianId);
-//
-//                for (String id : patientsId)
-//                    patients.add((Patient) admin.getUserById(id));
-//
-//                tempLinkedPhysicianToPatients.put(physician, patients);
-
-//            }
-
             properties.putAll(savableDic);
 
             properties.store(new FileOutputStream("links.properties"), null);
+
+        }
+
+    }
+
+    private void saveToDatesFile() throws IOException {
+
+        File fileObj = Main.fileGenerator("dates.properties");
+
+        if (fileObj != null) {
+
+
+            Properties properties = new Properties();
+            properties.load(new FileInputStream(fileObj));
+
+            Hashtable<String, String> savableDic = new Hashtable<String,String>();
+
+            for (Patient patient : allPatientsDate.keySet()) {
+
+                savableDic.put(patient.id, allPatientsDate.get(patient).toString());
+
+            }
+
+            properties.putAll(savableDic);
+
+            properties.store(new FileOutputStream("dates.properties"), null);
 
         }
 
@@ -216,33 +261,32 @@ public class sessionData {
 
             String stringOfStrings = "";
 
-//            for (Patient addingPatient : allPatients) {
-//
-//                stringOfStrings = stringOfStrings.concat(addingPatient.id + ".");
-//
-//            }
-//
-//            savableDic.put("allPatients", stringOfStrings);
-//
-//            stringOfStrings = "";
+            if (patientsArchive != null) {
 
-            for (String patientArchive : patientsArchive) {
+                for (String patientArchive : patientsArchive) {
 
-                stringOfStrings = stringOfStrings.concat(patientArchive + ".");
+                    stringOfStrings = stringOfStrings.concat(patientArchive + ".");
+
+                }
+
+                savableDic.put("patientsArchive", stringOfStrings);
 
             }
 
-            savableDic.put("patientsArchive", stringOfStrings);
 
             stringOfStrings = "";
 
-            for (Patient addingPatient : dischargedPatients) {
+            if (dischargedPatients != null) {
 
-                stringOfStrings = stringOfStrings.concat(addingPatient.id + ".");
+                for (Patient addingPatient : dischargedPatients) {
+
+                    stringOfStrings = stringOfStrings.concat(addingPatient.id + ".");
+
+                }
+
+                savableDic.put("dischargedPatients", stringOfStrings);
 
             }
-
-            savableDic.put("patientsArchive", stringOfStrings);
 
 
             properties.putAll(savableDic);
@@ -255,16 +299,16 @@ public class sessionData {
 
     }
 
-    @Override
-    protected void finalize() throws Throwable {
-        super.finalize();
+    void saveFiles() throws IOException {
 
         this.saveToLinksFile();
         this.saveThreeArrays();
+        this.saveToDatesFile();
 
     }
 
-    public static sessionData getSessionData() throws IOException {
+
+    public static sessionData getSessionData() throws IOException, ParseException {
 
         if (newSessionData == null) {
             newSessionData = new sessionData();

@@ -1,6 +1,7 @@
 package MainPackage;
 
 import java.io.*;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Properties;
@@ -445,9 +446,12 @@ public class Main {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
+        } catch (ParseException e) {
+            e.printStackTrace();
         }
 
-        System.out.println("Welcome :)\n");
+        System.out.println("Welcome :)\n\n");
+
 
         Hashtable<String, ArrayList<Object>> triedUsers = new Hashtable<String, ArrayList<Object>>();
 
@@ -455,7 +459,12 @@ public class Main {
 
         while (true) {
 
+            System.out.println("**If you want to exit program leave username empty**");
+
             loginReturn loginReturn = login();
+
+            if (loginReturn.username.isEmpty())
+                break;
 
             if (!loginReturn.userFound) {
                 System.out.println("No user found with this username!");
@@ -496,7 +505,9 @@ public class Main {
                 }
             } else {
                 newUser = loginReturn.user;
-                break;
+
+                newUser.Menu();
+
             }
 
         }
@@ -505,7 +516,7 @@ public class Main {
 //
 //        }
 
-        newUser.Menu();
+
     }
 
 
