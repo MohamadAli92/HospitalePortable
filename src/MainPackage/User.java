@@ -1,8 +1,16 @@
 package MainPackage;
 
+import javax.swing.*;
+import java.awt.*;
 import java.io.*;
-//import java.lang.reflect.Array;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.chrono.JapaneseDate;
 import java.util.*;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 abstract public class User {
 
@@ -15,50 +23,7 @@ abstract public class User {
     String password;
     Hashtable<User, String> messages;
 
-
-//    static Hashtable<String, String> getUserInformationFromFile(String username) throws IOException {
-//
-//        File fileObj = Main.fileGenerator("usersInformation.properties");
-//
-//        if (fileObj != null) {
-//
-//
-//            Properties properties = new Properties();
-//            properties.load(new FileInputStream(fileObj));
-//
-//
-//            for (String key : properties.stringPropertyNames()) {
-//                if (key.equals(username)) {
-//                    return Main.convertFileDottedDataToDic(properties.get(key).toString());
-//                }
-//
-//            }
-//
-//        }
-//
-//        return null;
-//    }
-
-//    public User getUserObjFromFile(UserType type) throws IOException {
-////        Hashtable<String, String> userInformation = User.getUserInformationFromFile(username);
-//
-////        String name = this.name;
-////        String lastName = this.lastName;
-////        String sex = this.sex;
-////        String id = this.id;
-//
-//        if (type == UserType.Physician) {
-//            return new Physician(username, password, name, lastName, sex, id, userInformation.get("field"), userInformation.get("record"));
-//        } else if (type == UserType.Nurse) {
-//            return new Nurse(userInformation.get("record"), name, lastName, sex, id);
-//        } else if (type == UserType.Patient) {
-//            return new Patient(userInformation.get("age"), userInformation.get("disease"), userInformation.get("mode"), name, lastName, sex, id);
-//        }
-//
-//        return null;
-//    }
-
-    User(String username, String password, UserType type, String name, String lastName, String sex, String id) {
+    User(String username, String password, UserType type, String name, String lastName, String sex, String id){
 
         this.type = type;
         this.name = name;
@@ -69,67 +34,86 @@ abstract public class User {
         this.password = password;
         this.messages = new Hashtable<User, String>();
 
+        if (Main.sessionData != null) {
+
+            for (String userId : Main.sessionData.receivedMessages.keySet()) {
+
+                if (userId.equals(this.id)) {
+
+                    for (String senderId : Main.sessionData.receivedMessages.get(userId).keySet()) {
+
+                        this.messages.put(Main.adminUser.getUserById(senderId), Main.sessionData.receivedMessages.get(userId).get(senderId));
+
+                    }
+
+                }
+
+            }
+
+        }
+
     }
 
-//    private String findUserUsername() throws IOException {
-//
-//        Hashtable<String, Hashtable<String, String>> allData = Main.getUsersInformationFromFile();
-//
-//        for (String username : allData.keySet()) {
-//
-//            if ((this.id).equals(allData.get(username).get("id")))
-//                return username;
-//        }
-//
-//        return null;
-//
-//    }
-
-//    private Hashtable<String, String[]> updateUserPassword(Hashtable<String, String[]> allData, String newPass) throws IOException {
-//
-//        String username = this.findUserUsername();
-//
-//        for (String checkUsername : allData.keySet()) {
-//
-//            if (checkUsername.equals(username)) {
-//                allData.get(checkUsername)[0] = newPass;
-//            }
-//
-//        }
-//
-//        return allData;
-//
-//    }
-
-//    Hashtable<String, String[]> addUserPassword(Hashtable<String, String[]> allData, String newPass, String username){
-//
-//        allData.put(username, new String[]{newPass, String.valueOf(this.type)});
-//
-//        return allData;
-//
-//    }
-
-//    Hashtable<String, String[]> changePassword(String newPass) throws IOException {
-//
-//        return updateUserPassword(Main.getUserCredentials(), newPass);
-//
-//    }
-
-    abstract void Menu() throws IOException;
+    abstract void Menu() throws IOException, ParseException;
 
     abstract String[] getUserInformationArray();
 
-    abstract Hashtable<String, String> getUserInformationDic();
+    void getMessage(User sourceUser, String message) throws IOException {
 
-    void getMessage(User sourceUser, String message) {
+//        if (messages.contains(sourceUser)) {
+//
+//        } else {
+//            ArrayList<String> messagesList = new ArrayList<String>();
+//            messagesList.add(message);
+//            messages.put(sourceUser, messagesList);
+//        }
 
         messages.put(sourceUser, message);
 
+        if (Main.sessionData.receivedMessages.containsKey(this.id))
+            Main.sessionData.receivedMessages.get(this.id).put(sourceUser.id, message);
+        else {
+            Hashtable<String, String> messages = new Hashtable<String, String>();
+            messages.put(sourceUser.id, message);
+            Main.sessionData.receivedMessages.put(this.id, messages);
+        }
+
+        Main.sessionData.saveFiles();
+
     }
 
-    protected void sendMessage(User destUser, String message) {
+    Integer showMessages() {
+
+        if (messages.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "There is no message!", "No message found!", JOptionPane.PLAIN_MESSAGE);
+            return 0;
+        }
+        String[] allMessages = new String[1000];
+        String title = ("Please enter one of these numbers: ");
+
+        int n = 0;
+
+        for (User user : messages.keySet()) {
+
+            String info = (n+1 + " - " + user.name + " " + user.lastName + " : " + messages.get(user));
+            allMessages[n] = info;
+            n++;
+
+        }
+        Object[] message = {
+                title, allMessages
+        };
+        String choice = JOptionPane.showInputDialog(null, message, "Messages", JOptionPane.PLAIN_MESSAGE);
+        if (choice == null)
+            return 0;
+        return (Integer.parseInt(choice));
+
+    }
+
+    protected void sendMessage(User destUser, String message) throws IOException {
 
         destUser.getMessage(this, message);
+
     }
 
 }
@@ -137,14 +121,12 @@ abstract public class User {
 class Admin extends User {
 
     Hashtable<String, String[]> allUserCredentials;
-//    Hashtable<String, Hashtable<String, String>> allUserInformation;
     ArrayList<User> allUsers;
 
-    Admin(String username, String password) throws IOException {
+    Admin(String username, String password) throws IOException, ParseException {
         super(username, password, UserType.Admin, "admin", "admin", "admin", "000");
 
         allUserCredentials = Main.getUserCredentials();
-//        allUserInformation = Main.getUsersInformationFromFile();
         allUsers = Main.getUsersFromFile();
 
     }
@@ -223,7 +205,6 @@ class Admin extends User {
     void addUserInformation(User user) {
 
         allUsers.add(user);
-//        allUserInformation.put(user.username, user.getUserInformationDic());
 
     }
 
@@ -238,13 +219,7 @@ class Admin extends User {
              allInformationDicArray.put(user.username, Main.convertUserToFileDottedData(user));
 
         }
-//        String[] userInformationArray = user.getUserInformationArray();
-//        String allData = "";
-//
-//        for (String data: userInformationArray) {
-//            allData = allData.concat(data+".");
-//        }
-//        allInformationDicArray.put(username, allData);
+
         if (fileObj != null) {
 
 
@@ -259,18 +234,27 @@ class Admin extends User {
 
     }
 
-//    private void
 
     private void listAllUsers(){
 
-//        Hashtable<String, Hashtable<String, String>> allUsers = Main.getUsersInformationFromFile();
+        String numOfUser = "There are " + allUsers.size() + " users.";
+        String[] allUsersArray = new String[1000];
 
-        int n = 1;
-
+        int i = 0;
         for (User user : allUsers) {
-            System.out.println(n + "- " + user.name + " " + user.lastName);
-            n++;
+            String userInfo = "Name: " + user.name + " " + user.lastName + "\n" + "Type: " + user.type + "\n" + "Id:" + user.id + "\n--------\n";
+            allUsersArray[i] = userInfo;
+            i++;
         }
+
+        Object[] message = {
+                numOfUser,
+                allUsersArray,
+        };
+
+        ImageIcon allUsersIcon = new ImageIcon("allUsersIcon.png");
+        JOptionPane.showMessageDialog(null, message, "All Users", JOptionPane.PLAIN_MESSAGE, allUsersIcon);
+
     }
 
     public static boolean checkPassword(String newPass) {
@@ -279,54 +263,70 @@ class Admin extends User {
 
         for (String character : characters) {
             if (newPass.contains(character))
-                return true;
+                return false;
         }
 
-        return false;
+        return true;
 
     }
 
     private void searchUser(String sample) {
 
-//        Hashtable<String, Hashtable<String, String>> allUsers = Main.getUsersInformationFromFile();
-
         int n = 1;
 
+        String[] allUsersArray = new String[1000];
+
+
         for (User user : allUsers) {
-            if (user.name.toLowerCase().contains(sample.toLowerCase())) {
-                System.out.println(n + "- " + user.name + " " + user.lastName);
+            if (user.lastName.toLowerCase().contains(sample.toLowerCase())) {
+                String userInfo = n + "- " + user.name + " " + user.lastName;
+                allUsersArray[n] = userInfo;
                 n++;
             }
         }
+
+        String numOfUser = "Found " + (n-1) + " users:\n";
+
+        Object[] message = {
+                numOfUser,
+                allUsersArray,
+        };
+
+        ImageIcon allUsersIcon = new ImageIcon("allUsersIcon.png");
+        JOptionPane.showMessageDialog(null, message, "Searching for user", JOptionPane.PLAIN_MESSAGE, allUsersIcon);
+
     }
 
-    private void addUser(String userType) throws IOException {
+    private void addUser(String userType) throws IOException, ParseException {
+
 
         String username = " ";
         while (username.contains(" ")) {
-            System.out.println("Please enter Username:");
-            username = Main.scanner.nextLine();
+
+            username = JOptionPane.showInputDialog(null, "Please enter Username: ", "Username of new user", JOptionPane.PLAIN_MESSAGE);
+
+            if (username == null)
+                return;
             if (username.contains(" "))
-                System.out.println("username shouldn't include whitespaces!");
+                JOptionPane.showMessageDialog(null, "username shouldn't include whitespaces!", "Invalid Username", JOptionPane.ERROR_MESSAGE);
         }
 
-        String password = " ";
-        while (password.contains(" ") || !checkPassword(password)) {
-            System.out.println("Please enter Password:");
-            password = Main.scanner.nextLine();
-            if (password.contains(" ") || !checkPassword(password))
-                System.out.println("password shouldn't include whitespaces and must contains\n" +
-                                   "at least one of these characters!: @#$%&*");
-        }
+        String password = Main.getPassword();
+        if (password == null)
+            return;
 
-
-        this.addUserPassword(username, password, userType);
+        this.addUserPassword(username, password, String.valueOf(Integer.parseInt(userType)+1));
         this.updateCredentialsFile();
 
-        System.out.println("Please enter name:");
-        String name = Main.scanner.nextLine();
-        System.out.println("Please enter lastName:");
-        String lastName = Main.scanner.nextLine();
+        String name = JOptionPane.showInputDialog(null, "Please enter name: ", "Name of new user", JOptionPane.PLAIN_MESSAGE);
+
+        if (name == null)
+            return;
+
+        String lastName = JOptionPane.showInputDialog(null, "Please enter lastname: ", "Name of new user", JOptionPane.PLAIN_MESSAGE);
+
+        if (lastName == null)
+            return;
 
         Random r = new Random();
         int low = 100;
@@ -345,81 +345,178 @@ class Admin extends User {
             else id = Integer.toString(r.nextInt(high-low) + low);
         }
 
-        System.out.println("Please enter sex:");
-        String sex = Main.scanner.nextLine();
+        String[] buttonsUserType = { "Man", "Woman", "Cancel"};
+
+        int genderChoice = JOptionPane.showOptionDialog(null, "Select gender", "Gender",
+                JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, buttonsUserType, 2);
+
+
+        if (genderChoice == 0) {
+            sex = "Man";
+        } else if (genderChoice == 1) {
+            sex = "Woman";
+        } else return;
 
         User newUser = null;
-        if (userType.equals("1")) {
-            System.out.println("Please enter field:");
-            String field = Main.scanner.nextLine();
-            System.out.println("Please enter record:");
-            String record = Main.scanner.nextLine();
+        if (userType.equals("0")) {
+            String field = JOptionPane.showInputDialog(null, "Please enter field: ", "Name of new user", JOptionPane.PLAIN_MESSAGE);
+
+            if (field == null)
+                return;
+
+            String record = JOptionPane.showInputDialog(null, "Please enter record: ", "Name of new user", JOptionPane.PLAIN_MESSAGE);
+
+            if (record == null)
+                return;
+
 
             newUser = new Physician(username, password, name, lastName, sex, id, field, record);
 
-        } else if (userType.equals("2")) {
-            System.out.println("Please enter record:");
-            String record = Main.scanner.nextLine();
+        } else if (userType.equals("1")) {
+            String record = JOptionPane.showInputDialog(null, "Please enter record: ", "Name of new user", JOptionPane.PLAIN_MESSAGE);
+
+            if (record == null)
+                return;
+
 
             newUser = new Nurse(username, password, record, name, lastName, sex, id);
 
-        } else if (userType.equals("3")) {
-            System.out.println("Please enter age:");
-            String age = Main.scanner.nextLine();
-            System.out.println("Please enter disease:");
-            String disease = Main.scanner.nextLine();
+        } else if (userType.equals("2")) {
+            String age;
+            while (true) {
+                age = JOptionPane.showInputDialog(null, "Please enter age: ", "Age of new user", JOptionPane.PLAIN_MESSAGE);
+
+                String regex = "^[a-zA-Z]+$";
+                Pattern pattern = Pattern.compile(regex);
+                Matcher matcher = pattern.matcher(age);
+                if (age == null)
+                    return;
+                if (!matcher.matches())
+                    break;
+
+            }
+
+            String disease = JOptionPane.showInputDialog(null, "Please enter Disease: ", "Disease of new user", JOptionPane.PLAIN_MESSAGE);
+
+            if (disease == null)
+                return;
 
             String mode = " ";
-            ArrayList<String> modes = new ArrayList<String>();
-            modes.add("Vip");
-            modes.add("Normal");
-            modes.add("Insurance");
 
-            while (!modes.contains(mode)) {
-                System.out.println("Please enter mode:");
-                mode = Main.scanner.nextLine();
-                if (!modes.contains(mode))
-                    System.out.println("invalid mode!");
-            }
+            String[] modeUsers = { "Vip", "Normal", "Insurance", "Cancel"};
+
+            int modeChoice = JOptionPane.showOptionDialog(null, "Select mode", "Mode",
+                    JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, modeUsers, 3);
+
+
+            if (modeChoice == 0) {
+                mode = "Vip";
+            } else if (modeChoice == 1) {
+                mode = "Normal";
+            } else if (modeChoice == 2) {
+                mode = "Insurance";
+            } else return;
 
             newUser = new Patient(username, password, age, disease, mode, name, lastName, sex, id);
 
         }
 
-//        assert newUser != null;
-//        Main.saveUserCredentials(newUser.addUserPassword(Main.getUserCredentials(), password, username));
-        assert newUser != null;
         this.addUserInformation(newUser);
+//        this.addUserPassword(username, password, userType);
         this.updateInformationFile();
+//        this.updateCredentialsFile();
 
     }
 
-    private void deleteUser(String id) {
+    private void deleteUser(String id) throws IOException {
 
-//        Hashtable<String, Hashtable<String, String>> allUsers = Main.getUsersInformationFromFile();
+        for (Iterator<User> it = allUsers.iterator(); it.hasNext(); ){
 
-//        for (String key : allUsers.keySet()) {
-//            if (allUsers.get(key).get("id").equals(id))
-//                allUsers.remove(key);
-//        }
-
-        for (User deletingUser : allUsers) {
+            User deletingUser = it.next();
 
             if (deletingUser.id.equals(id)) {
                 String username = deletingUser.username;
-                allUsers.remove(deletingUser);
+
+                // Delete user information
+                it.remove();
+
+                // Delete user credentials
                 for (String checkingUsername : allUserCredentials.keySet()) {
                     if (checkingUsername.equals(username)){
                         allUserCredentials.remove(username);
                         break;
                     }
+                }
+
+                // Delete for Physician
+                if (deletingUser.type == UserType.Physician) {
+
+                    for (Physician deletingPhysician : Main.sessionData.linkedPhysicianToPatients.keySet()) {
+                        if (deletingPhysician.id.equals(deletingUser.id)){
+                            Main.sessionData.linkedPhysicianToPatients.remove(deletingPhysician);
+                            break;
+                        }
+                    }
 
                 }
+
+                // Delete for Patient
+                if (deletingUser.type == UserType.Patient) {
+
+                    for (Physician checkingPhysician : Main.sessionData.linkedPhysicianToPatients.keySet()) {
+                        for (Patient deletingPatient : Main.sessionData.linkedPhysicianToPatients.get(checkingPhysician)) {
+                            if (deletingPatient.id.equals(deletingUser.id)){
+                                Main.sessionData.linkedPhysicianToPatients.get(checkingPhysician).remove(deletingPatient);
+                                break;
+                            }
+                        }
+                    }
+
+                    for (Patient deletingPatient : Main.sessionData.allPatients) {
+                        if (deletingPatient.id.equals(deletingUser.id)){
+                            Main.sessionData.allPatients.remove(deletingPatient);
+                            break;
+                        }
+                    }
+
+                    for (Patient deletingPatient : Main.sessionData.allPatientsDate.keySet()) {
+                        if (deletingPatient.id.equals(deletingUser.id)){
+                            Main.sessionData.allPatientsDate.remove(deletingPatient);
+                            break;
+                        }
+                    }
+
+                    for (Patient deletingPatient : Main.sessionData.dischargedPatients) {
+                        if (deletingPatient.id.equals(deletingUser.id)){
+                            Main.sessionData.dischargedPatients.remove(deletingPatient);
+                            break;
+                        }
+                    }
+
+                }
+
+                // Delete messages for all Types
+                for (Iterator<String> innerIt = Main.sessionData.receivedMessages.keySet().iterator(); innerIt.hasNext(); ){
+                    String deletingId = innerIt.next();
+                    if (deletingId.equals(deletingUser.id)){
+                        innerIt.remove();
+                        continue;
+                    }
+                    for (String messageId : Main.sessionData.receivedMessages.get(deletingId).keySet()){
+                        if (messageId.equals(deletingUser.id)){
+                            Main.sessionData.receivedMessages.get(deletingId).remove(messageId);
+                            break;
+                        }
+                    }
+                    if (Main.sessionData.receivedMessages.get(deletingId).isEmpty())
+                        innerIt.remove();
+                }
+
                 break;
             }
-
         }
 
+        Main.sessionData.saveFiles();
     }
 
     public User getUserObj(String username) {
@@ -433,58 +530,59 @@ class Admin extends User {
     }
 
     @Override
-    void Menu() throws IOException {
+    void Menu() throws IOException, ParseException {
 
         while (true) {
 
-            System.out.println("Select one of options:\n" +
-                    "1-list all users\n" +
-                    "2-search user by last name\n" +
-                    "3-add user\n" +
-                    "4-delete user\n" +
-                    "5-change password\n" +
-                    "0-Exit to login menu");
+            String[] buttons = { "list all users", "search user by last name", "add user", "delete user",
+                    "change password", "Exit to login menu"};
 
-            String choice = Main.scanner.nextLine();
+            int choiceN = JOptionPane.showOptionDialog(null, "Select one of these options", this.type + "'s Menu",
+                    JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, buttons, 5);
 
-            if (choice.equals("1")) {
+            String choice = String.valueOf(choiceN);
+
+            if (choice.equals("0")) {
+
                 this.listAllUsers();
+
+            } else if (choice.equals("1")) {
+
+                String searchSample = JOptionPane.showInputDialog(null, "Enter search sample: ", "Search user", JOptionPane.PLAIN_MESSAGE);
+
+                if (searchSample == null)
+                    return;
+
+                this.searchUser(searchSample);
             } else if (choice.equals("2")) {
-                System.out.println("Enter search sample:");
-                this.searchUser(Main.scanner.nextLine());
+
+                String[] buttonsUserType = { "Physician", "Nurse", "Patient", "Cancel"};
+
+                int choiceUsersN = JOptionPane.showOptionDialog(null, "Select new user type", "Adding user type",
+                        JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE, null, buttonsUserType, 3);
+
+                String userType = String.valueOf(choiceUsersN);
+                if (choiceUsersN != 3)
+                    this.addUser(userType);
+
+
             } else if (choice.equals("3")) {
+                String deletingId = JOptionPane.showInputDialog(null, "Enter search sample: ", "Search user", JOptionPane.PLAIN_MESSAGE);
 
-                System.out.println("Select one of these user types:\n" +
-                        "1-Physician\n" +
-                        "2-Nurse\n" +
-                        "3-Patient\n");
+//                if (deletingId == null)
+//                    return;
 
-                String userType = Main.scanner.nextLine();
-
-                this.addUser(userType);
-            } else if (choice.equals("4")) {
-                System.out.println("Enter an id number:");
-                this.deleteUser(Main.scanner.nextLine());
+                this.deleteUser(deletingId);
                 this.updateInformationFile();
                 this.updateCredentialsFile();
-            } else if (choice.equals("5")) {
+            } else if (choice.equals("4")) {
 
-                String password = " ";
-                while (password.contains(" ") || !checkPassword(password)) {
-                    System.out.println("Please enter Password:");
-                    password = Main.scanner.nextLine();
-                    if (password.contains(" ") || !checkPassword(password))
-                        System.out.println("password shouldn't include whitespaces and must contains\n" +
-                                "at least one of these characters!: @#$%&*");
-                }
-
-                this.changeUserPassword(username, password);
+                String newPass = Main.getPassword();
+                this.changeUserPassword(username, newPass);
                 this.updateCredentialsFile();
 
-            } else if (choice.equals("0")) {
+            } else if (choice.equals("5")) {
                 break;
-            } else {
-                System.out.println("Invalid input!");
             }
 
         }
@@ -499,19 +597,6 @@ class Admin extends User {
         return new String[]{this.name, this.lastName, this.sex, this.id, String.valueOf(this.type)};
     }
 
-    @Override
-    Hashtable<String, String> getUserInformationDic() {
-        Hashtable<String, String> informationDic = new Hashtable<String, String>();
-
-        informationDic.put("name", this.name);
-        informationDic.put("lastName", this.lastName);
-        informationDic.put("sex", this.sex);
-        informationDic.put("id", this.id);
-        informationDic.put("type", String.valueOf(this.type));
-
-        return informationDic;
-    }
-
 }
 
 class Physician extends User {
@@ -520,14 +605,35 @@ class Physician extends User {
     String record;
     Hashtable<Patient, Date> patients;
 
-    Physician(String username, String password, String name, String lastName, String sex, String id, String field, String record){
+    Physician(String username, String password, String name, String lastName, String sex, String id, String field, String record) throws IOException, ParseException {
         super(username, password, UserType.Physician, name, lastName, sex, id);
 
         this.field = field;
         this.record = record;
-        if (Main.sessionData != null)
-            patients = Main.sessionData.allPatientsDate;
-        else patients = null;
+        this.patients = getPatients();
+
+    }
+
+    private Hashtable<Patient, Date> getPatients() throws IOException, ParseException {
+
+        Hashtable<Patient, Date> tempPatients = new Hashtable<Patient, Date>();
+
+        if (Main.sessionData != null) {
+            for (Physician checkingPhys : Main.sessionData.linkedPhysicianToPatients.keySet()) {
+                if (checkingPhys.id.equals(this.id)) {
+                    for (Patient addingPatient : Main.sessionData.linkedPhysicianToPatients.get(checkingPhys)) {
+                        for (Patient datePatient : Main.sessionData.allPatientsDate.keySet()) {
+                            if (datePatient.id.equals(addingPatient.id)) {
+                                tempPatients.put(addingPatient, Main.sessionData.allPatientsDate.get(datePatient));
+                                break;
+                            }
+                        }
+                    }
+                    break;
+                }
+            }
+            return tempPatients;
+        } else return null;
 
     }
 
@@ -562,21 +668,45 @@ class Physician extends User {
 
             }
 
-            int n = 1;
+            int n = 0;
 
-            System.out.println("Please enter one of these numbers or enter 0 to exit:");
+            if (availablePatients.isEmpty()) {
+                JOptionPane.showMessageDialog(null, "There isn't any patient!", "Not Found", JOptionPane.WARNING_MESSAGE);
+                break;
+            }
+            String[] usersInfo = new String[1000];
+
             for (Patient patient : availablePatients) {
-                System.out.println(n + "- " + patient.name + " " + patient.lastName);
+                String info = (n+1) + " - " + patient.name + " " + patient.lastName + '\n';
+                usersInfo[n] = info;
                 n++;
             }
-            String choice = Main.scanner.nextLine();
-            if (choice.equals("0")) {
+
+            Object[] message = {
+                    "Please enter number of a patient: ",
+                    usersInfo
+            };
+
+            String choice = JOptionPane.showInputDialog(null, message, "Pick Patient", JOptionPane.PLAIN_MESSAGE);
+
+            if (choice == null)
+                return;
+
+            int choiceInt;
+            try {
+                choiceInt = Integer.parseInt(choice)-1;
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(null, "Invalid choice!", "Invalid choice", JOptionPane.WARNING_MESSAGE);
+                break;
+            }
+
+            if (choiceInt < 0 || choiceInt >= availablePatients.size()) {
+                JOptionPane.showMessageDialog(null, "Invalid choice!", "Invalid choice", JOptionPane.WARNING_MESSAGE);
                 break;
             } else {
-                int choiceInt = Integer.parseInt(choice)-1;
                 Patient addingPatient = availablePatients.get(choiceInt);
                 this.patients.put(addingPatient, new Date());
-                this.patients.putAll(Main.sessionData.allPatientsDate);
+                Main.sessionData.allPatientsDate.putAll(this.patients);
 
                 boolean userFound = false;
 
@@ -601,19 +731,22 @@ class Physician extends User {
 
     private void listAllPatients() {
 
-        int n = 1;
+        int n = 0;
 
-        if (Main.sessionData.allPatients.isEmpty()){
-            System.out.println("No patient has been added!");
+        if (patients.isEmpty()){
+            JOptionPane.showMessageDialog(null, "No patient has been added!", "Not Found", JOptionPane.WARNING_MESSAGE);
         } else {
+            String[] allPatients = new String[1000];
             for (Patient patient : patients.keySet()) {
-                System.out.println(n + " - " + patient.name + " " + patient.lastName);
-                System.out.println("    " + patient.disease);
-                System.out.println("    " + patients.get(patient));
+                String patientInfo = patient.name + " " + patient.lastName + '\n';
+                patientInfo += "    disease: " + patient.disease + '\n';
+                patientInfo += "    id: " + patient.id + '\n';
+                patientInfo += "-----------------";
+                allPatients[n] = patientInfo;
                 n++;
             }
+            JOptionPane.showMessageDialog(null, allPatients, "Picked patients", JOptionPane.PLAIN_MESSAGE);
         }
-
     }
 
     private void viewPatientInfo(String sample) {
@@ -649,60 +782,52 @@ class Physician extends User {
             }
 
         }
-
-        System.out.println("Found " + foundPatients.size() + " results");
+        String[] allPatients = new String[1000];
+        String foundNums = "Found " + foundPatients.size() + " results";
+        int n = 0;
         for (Patient patient : foundPatients) {
-            System.out.println(patient.name + "/" +
+            String userInfo = (patient.name + "/" +
                                 patient.lastName + "/" +
                                 patient.disease + "/" +
                                 patient.age + "/" +
                                 patient.mode);
+            n++;
+            allPatients[n] = userInfo;
         }
+        Object[] message = {
+                foundNums, allPatients
+        };
+
+        JOptionPane.showMessageDialog(null, message, "Picked patients", JOptionPane.PLAIN_MESSAGE);
+
 
     }
 
-    private void writeMedicine() {
-
-        int n = 1;
+    private void writeMedicine() throws IOException {
 
         while (true) {
-            System.out.println("Please enter one of these numbers or enter 0 to exit:");
-            for (String message : messages.values()) {
-                System.out.println(n + "- " + message);
-                n++;
-            }
-            String choice = Main.scanner.nextLine();
-            if (choice.equals("0")) {
+
+            Integer choice = this.showMessages();
+            if (choice == 0) {
                 break;
             } else {
                 List<User> users = new ArrayList<User>(messages.keySet());
-                User destUser = users.get(Integer.getInteger(choice));
+                User destUser = users.get(choice-1);
 
                 if (destUser.type == UserType.Nurse) {
 
-                    System.out.println("Please write medicines:");
-                    String medicines = Main.scanner.nextLine();
+                    String medicines = JOptionPane.showInputDialog(null, "Please write medicines:", "Write medicine", JOptionPane.PLAIN_MESSAGE);
 
                     this.sendMessage(destUser, medicines);
 
                     this.messages.remove(destUser);
 
                 }
-
-//                Patient addingPatient = availablePatients.get(Integer.getInteger(choice));
-////                this.patients.add(addingPatient);
-//                this.patients.put(addingPatient, new Date());
-//                sessionData.linkedPhysicianToPatients.put(this, addingPatient);
-
             }
         }
-
-//        for (String message : messages.values()) {
-//
-//        }
     }
 
-    private void dischargePatient(String id) throws IOException {
+    private void dischargePatient(String id) throws IOException, ParseException {
 
         for (Patient dischargingPatient : patients.keySet()) {
             if (dischargingPatient.id.equals(id)) {
@@ -712,11 +837,7 @@ class Physician extends User {
                         dischargingPatient.disease + ") " + "discharged at (" + new Date() + ") and was a (" +
                         dischargingPatient.mode + ") patient;";
 
-                System.out.println(archiveString);
-
-//                Main.sessionData.patientsArchive.add(archiveString);
-
-//                sessionData.allPatients.remove(dischargingPatient);
+                JOptionPane.showMessageDialog(null, archiveString, "Archieved", JOptionPane.PLAIN_MESSAGE);
 
                 patients.remove(dischargingPatient);
 
@@ -729,13 +850,12 @@ class Physician extends User {
                             }
                         }
                     }
-//                        Main.sessionData.linkedPhysicianToPatients.get(physician).remove(dischargingPatient);
                 }
-//                Main.sessionData.linkedPhysicianToPatients.get(this).remove(dischargingPatient);
 
                 Main.sessionData.dischargedPatients.add(dischargingPatient);
                 Main.sessionData.patientsArchive.add(archiveString);
-                this.patients.putAll(Main.sessionData.allPatientsDate);
+                Main.sessionData.allPatientsDate.putAll(this.patients);
+                Main.sessionData.allPatients.remove(dischargingPatient);
 
                 Main.sessionData.saveFiles();
 
@@ -746,62 +866,59 @@ class Physician extends User {
 
 
     @Override
-    void Menu() throws IOException {
+    void Menu() throws IOException, ParseException {
 
         while (true) {
 
-            System.out.println("Select one of options:\n" +
-                    "1-Pick Patient\n" +
-                    "2-List All Patients\n" +
-                    "3-View Patient Info\n" +
-                    "4-Write Medicine\n" +
-                    "5-Discharge Patient\n" +
-                    "6-Change Password\n" +
-                    "0-Exit to login menu");
+            String[] buttons = { "Pick Patient", "List All Patients", "View Patient Info", "Write Medicine",
+                    "Discharge Patient", "Change Password", "Exit to login menu"};
 
-            String choice = Main.scanner.nextLine();
+            int choiceN = JOptionPane.showOptionDialog(null, "Select one of these options", this.type + "'s Menu",
+                    JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, buttons, 5);
 
-            if (choice.equals("1")) {
+            String choice = String.valueOf(choiceN);
+
+
+            if (choice.equals("0")) {
 
                 this.pickPatient();
 
-            } else if (choice.equals("2")) {
+            } else if (choice.equals("1")) {
 
                 this.listAllPatients();
 
+            } else if (choice.equals("2")) {
+
+                String searchSample = JOptionPane.showInputDialog(null, "Enter patient's name or enter lastname-id: ", "Search user", JOptionPane.PLAIN_MESSAGE);
+
+                if (searchSample == null)
+                    continue;
+
+                this.viewPatientInfo(searchSample);
+
             } else if (choice.equals("3")) {
-
-                System.out.println("Enter patient's name or enter lastname-id:");
-                this.viewPatientInfo(Main.scanner.nextLine());
-
-            } else if (choice.equals("4")) {
 
                 this.writeMedicine();
 
+            } else if (choice.equals("4")) {
+
+                String patientId = JOptionPane.showInputDialog(null, "Enter patient's id: ", "Search user", JOptionPane.PLAIN_MESSAGE);
+
+                if (patientId == null)
+                    continue;
+
+                this.dischargePatient(patientId);
+
             } else if (choice.equals("5")) {
 
-                System.out.println("Enter patient's id:");
-                this.dischargePatient(Main.scanner.nextLine());
-
-            } else if (choice.equals("6")) {
-
-                String password = " ";
-                while (password.contains(" ") || !Admin.checkPassword(password)) {
-                    System.out.println("Please enter Password:");
-                    password = Main.scanner.nextLine();
-                    if (password.contains(" ") || !Admin.checkPassword(password))
-                        System.out.println("password shouldn't include whitespaces and must contains\n" +
-                                "at least one of these characters!: @#$%&*");
-                }
+                String password = Main.getPassword();
 
                 Admin newAdmin = new Admin("admin", "admin");
                 newAdmin.changeUserPassword(this.username, password);
                 newAdmin.updateCredentialsFile();
 
-            } else if (choice.equals("0")) {
+            } else if (choice.equals("6")) {
                 break;
-            } else {
-                System.out.println("Invalid input!\n");
             }
 
         }
@@ -813,21 +930,6 @@ class Physician extends User {
         return new String[]{this.name, this.lastName, this.sex, this.id, String.valueOf(this.type), this.record, this.field};
     }
 
-    @Override
-    Hashtable<String, String> getUserInformationDic() {
-        Hashtable<String, String> informationDic = new Hashtable<String, String>();
-
-        informationDic.put("name", this.name);
-        informationDic.put("lastName", this.lastName);
-        informationDic.put("sex", this.sex);
-        informationDic.put("id", this.id);
-        informationDic.put("type", String.valueOf(this.type));
-        informationDic.put("record", this.record);
-        informationDic.put("field", this.field);
-
-        return informationDic;
-    }
-
 
 }
 
@@ -835,34 +937,247 @@ class Nurse extends User {
 
     String record;
 
-    Nurse(String username, String password, String record, String name, String lastName, String sex, String id){
+    Nurse(String username, String password, String record, String name, String lastName, String sex, String id) {
         super(username, password, UserType.Nurse, name, lastName, sex, id);
 
         this.record = record;
     }
 
+    private void noDoctorAssigned() {
+
+        ArrayList<Patient> notAssignedPatients = new ArrayList<Patient>();
+
+        for (Patient pubPatient : Main.sessionData.allPatients) {
+
+            boolean notAssigned = true;
+
+            for (Patient assignedPatient : Main.sessionData.allPatientsDate.keySet()) {
+
+                if (pubPatient.id.equals(assignedPatient.id)){
+                    notAssigned = false;
+                    break;
+                }
+
+            }
+
+            if (notAssigned) {
+                notAssignedPatients.add(pubPatient);
+            }
+
+        }
+
+        int n =0;
+
+        String[] allUsersInfo = new String[1000];
+
+        for (Patient patient : notAssignedPatients) {
+
+            String userInfo = (n+1 + " - " + patient.name + " " + patient.lastName + '\n');
+            allUsersInfo[n] = userInfo;
+            n++;
+
+        }
+        if (notAssignedPatients.isEmpty())
+            JOptionPane.showMessageDialog(null, "No patients found!", "No patient found", JOptionPane.WARNING_MESSAGE);
+        else
+            JOptionPane.showMessageDialog(null, allUsersInfo, "All patients info", JOptionPane.PLAIN_MESSAGE);
+    }
+
+    private void checkedIn() throws ParseException {
+
+        JTextField EnterDate = new JTextField();
+        JTextField OutDate = new JTextField();
+        Object[] message = {
+                "Please enter a date in format DD-MM-YYYY: ", EnterDate,
+                "Please enter another date in format DD-MM-YYYY: ", OutDate
+        };
+
+        int selected = JOptionPane.showConfirmDialog(null, message, "Checked In", JOptionPane.OK_CANCEL_OPTION, JOptionPane.INFORMATION_MESSAGE);
+
+        String firstDateString = EnterDate.getText();
+        String secondDateString = OutDate.getText();
+
+        if (selected != JOptionPane.OK_OPTION)
+            return;
+
+        Date firstDate = new SimpleDateFormat("dd-MM-yyyy").parse(firstDateString);
+        Date secondDate = new SimpleDateFormat("dd-MM-yyyy").parse(secondDateString);
+
+        int n = 0;
+
+        String[] allUsersInfo = new String[1000];
+
+        for (Patient patient : Main.sessionData.allPatientsDate.keySet()) {
+
+            if (Main.sessionData.allPatientsDate.get(patient).after(firstDate) &&
+                Main.sessionData.allPatientsDate.get(patient).before(secondDate)) {
+
+                String userInfo = (n+1 + " - " + patient.name + " " + patient.lastName + '\n');
+
+                allUsersInfo[n] = userInfo;
+
+                n++;
+
+            }
+
+        }
+
+        if (Main.sessionData.allPatientsDate.isEmpty())
+            JOptionPane.showMessageDialog(null, "No patient found", "No patients", JOptionPane.WARNING_MESSAGE);
+        else
+            JOptionPane.showMessageDialog(null, allUsersInfo, "All checked in users", JOptionPane.PLAIN_MESSAGE);
+
+    }
+
+    private void getPrescription() throws IOException {
+
+        while (true) {
+
+            String menu = ("Select one of options:\n" +
+                    "**Be careful that this message will be replaced with your last message to each user**\n" +
+                    "1-Send message to all doctors to write medicine for their patients\n" +
+                    "2-Reply to messages\n");
+
+            String choiceMenu = JOptionPane.showInputDialog(null, menu, "Menu", JOptionPane.PLAIN_MESSAGE);
+
+            if (choiceMenu == null) return;
+
+            if (choiceMenu.equals("1")) {
+
+                for (Physician doctor : Main.sessionData.linkedPhysicianToPatients.keySet()) {
+
+                    for (Patient patient : Main.sessionData.linkedPhysicianToPatients.get(doctor)) {
+
+                        String message = "Please write medicines for (" + patient.name + " " + patient.lastName + ").";
+
+                        this.sendMessage(doctor, message);
+
+                    }
+                }
+
+            } else if (choiceMenu.equals("2")) {
+
+                while (true) {
+                    Integer choice = this.showMessages();
+                    if (choice == 0) {
+                        break;
+                    } else {
+                        List<User> users = new ArrayList<User>(messages.keySet());
+                        User destUser = users.get(choice-1);
+
+                        if (destUser.type == UserType.Physician) {
+
+                            String medicines = JOptionPane.showInputDialog(null, "Please write reply to message: ", "Reply", JOptionPane.PLAIN_MESSAGE);
+
+                            if (medicines == null)
+                                return;
+                            this.sendMessage(destUser, medicines);
+
+                            this.messages.remove(destUser);
+
+                        }
+                    }
+                }
+
+            } else if (choiceMenu.equals("0")) {
+                break;
+            }
+
+        }
+
+    }
+
+    private void discharge() {
+
+        int n = 0;
+
+        String[] allDischarged = new String[1000];
+
+        for (Patient dischargedPatient : Main.sessionData.dischargedPatients) {
+
+            allDischarged[n] = n+1 + " - " + dischargedPatient.name + " " + dischargedPatient.lastName;
+
+            n++;
+        }
+
+        if (Main.sessionData.dischargedPatients.isEmpty())
+            JOptionPane.showMessageDialog(null, "No user found!", "No user", JOptionPane.WARNING_MESSAGE);
+        else
+            JOptionPane.showMessageDialog(null, allDischarged, "All users", JOptionPane.PLAIN_MESSAGE);
+
+    }
+
+    private void checkState() throws ParseException, IOException {
+
+        while (true) {
+
+            String[] buttons = { "No doctor assigned", "Checked in", "Get prescription", "Discharge",
+                    "Exit to main menu"};
+
+            int choiceN = JOptionPane.showOptionDialog(null, "Select one of these options", "Check state",
+                    JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, buttons, 4);
+
+            String choice = String.valueOf(choiceN);
+
+
+            if (choice.equals("0")) {
+
+                this.noDoctorAssigned();
+
+            } else if (choice.equals("1")) {
+
+                this.checkedIn();
+
+            } else if (choice.equals("2")) {
+
+                this.getPrescription();
+
+            } else if (choice.equals("3")) {
+
+                this.discharge();
+
+            } else if (choice.equals("4")) {
+                break;
+            }
+
+        }
+
+    }
+
     @Override
-    void Menu() {
+    void Menu() throws IOException, ParseException {
+
+        while (true) {
+
+            String[] buttons = { "Check the patient state", "Change Password", "Exit to login menu"};
+
+            int choiceN = JOptionPane.showOptionDialog(null, "Select one of these options", this.type + "'s Menu",
+                    JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, buttons, 2);
+
+            String choice = String.valueOf(choiceN);
+
+            if (choice.equals("0")) {
+
+                this.checkState();
+
+            } else if (choice.equals("1")) {
+
+                String password = Main.getPassword();
+                Admin newAdmin = new Admin("admin", "admin");
+                newAdmin.changeUserPassword(this.username, password);
+                newAdmin.updateCredentialsFile();
+
+            } else if (choice.equals("2")) {
+                break;
+            }
+
+        }
 
     }
 
     @Override
     String[] getUserInformationArray() {
         return new String[]{this.name, this.lastName, this.sex, this.id, String.valueOf(this.type), this.record};
-    }
-
-    @Override
-    Hashtable<String, String> getUserInformationDic() {
-        Hashtable<String, String> informationDic = new Hashtable<String, String>();
-
-        informationDic.put("name", this.name);
-        informationDic.put("lastName", this.lastName);
-        informationDic.put("sex", this.sex);
-        informationDic.put("id", this.id);
-        informationDic.put("type", String.valueOf(this.type));
-        informationDic.put("record", this.record);
-
-        return informationDic;
     }
 
 }
@@ -873,7 +1188,7 @@ class Patient extends User {
     String disease;
     Mode mode;
 
-    Patient(String username, String password, String age, String disease, String mode, String name, String lastName, String sex, String id){
+    Patient(String username, String password, String age, String disease, String mode, String name, String lastName, String sex, String id) {
         super(username, password, UserType.Patient, name, lastName, sex, id);
 
         this.age = age;
@@ -882,30 +1197,87 @@ class Patient extends User {
 
     }
 
+    private void checkOut() {
+
+        boolean isDischarged = false;
+
+        for (User dischargedPatient : Main.sessionData.dischargedPatients) {
+
+            if (dischargedPatient.id.equals(this.id)) {
+                isDischarged = true;
+                break;
+            }
+
+        }
+
+        if (!isDischarged) {
+            JOptionPane.showMessageDialog(null, "You are not discharged yet!", "Not discharged yet!", JOptionPane.PLAIN_MESSAGE);
+        } else {
+
+            long checkOutPrice = 0;
+            long daysInHis = 0;
+
+            for (Patient user : Main.sessionData.allPatientsDate.keySet()) {
+                if (user.id.equals(this.id)) {
+                    long diffInMs = new Date().getTime() - Main.sessionData.allPatientsDate.get(user).getTime();
+                    daysInHis = TimeUnit.DAYS.convert(diffInMs, TimeUnit.MILLISECONDS);
+                }
+            }
+
+            if (this.mode == Mode.Vip) {
+                checkOutPrice = (daysInHis+1) * 120;
+            } else if (this.mode == Mode.Normal) {
+                checkOutPrice = (daysInHis+1) * 70;
+            } else if (this.mode == Mode.Insurance){
+                checkOutPrice = (daysInHis+1) * 35;
+            }
+
+            String[] buttons = { "Confirm", "Cancel"};
+
+            Object[] message = {
+                    ("Your bill is " + checkOutPrice + "$"),
+                    "Do you want to pay?",
+            };
+
+            JOptionPane.showOptionDialog(null, message, "Pay bill", JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, buttons, 0);
+
+        }
+    }
+
     @Override
-    void Menu() {
+    void Menu() throws IOException, ParseException {
+
+        while (true) {
+
+            String[] buttons = { "Check out", "Change Password", "Exit to login menu"};
+
+            int choiceN = JOptionPane.showOptionDialog(null, "Select one of these options", this.type + "'s Menu",
+                    JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, buttons, 5);
+
+            String choice = String.valueOf(choiceN);
+
+            if (choice.equals("0")) {
+
+                this.checkOut();
+
+            } else if (choice.equals("1")) {
+
+                String password = Main.getPassword();
+                Admin newAdmin = new Admin("admin", "admin");
+                newAdmin.changeUserPassword(this.username, password);
+                newAdmin.updateCredentialsFile();
+
+            } else if (choice.equals("2")) {
+                break;
+            }
+
+        }
 
     }
 
     @Override
     String[] getUserInformationArray() {
         return new String[]{this.name, this.lastName, this.sex, this.id, String.valueOf(this.type), this.age, this.disease, String.valueOf(this.mode)};
-    }
-
-    @Override
-    Hashtable<String, String> getUserInformationDic() {
-        Hashtable<String, String> informationDic = new Hashtable<String, String>();
-
-        informationDic.put("name", this.name);
-        informationDic.put("lastName", this.lastName);
-        informationDic.put("sex", this.sex);
-        informationDic.put("id", this.id);
-        informationDic.put("type", String.valueOf(this.type));
-        informationDic.put("age", this.age);
-        informationDic.put("disease", this.disease);
-        informationDic.put("mode", String.valueOf(this.mode));
-
-        return informationDic;
     }
 
 }
