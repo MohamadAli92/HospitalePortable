@@ -1,5 +1,3 @@
-package MainPackage;
-
 public enum Mode {
 
     Vip,
