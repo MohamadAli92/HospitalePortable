@@ -6,14 +6,14 @@ import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Properties;
 import java.util.Scanner;
-
+import javax.swing.*;
 
 class loginReturn {
 
-    User user = null;
+    User user;
     boolean userFound;
     boolean wrongPassword;
-    String username = null;
+    String username;
 
     loginReturn(User user, boolean userFound, boolean wrongPassword, String username) {
         this.user = user;
@@ -30,6 +30,19 @@ public class Main {
 
     static Scanner scanner = new Scanner(System.in);
 
+    static Admin adminUser;
+
+    static {
+        try {
+            adminUser = new Admin("admin", "admin");
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+    }
+
+
     public static File fileGenerator(String fileName) {
 
         try {
@@ -41,7 +54,8 @@ public class Main {
 
         } catch (IOException e) {
 
-            System.out.println("An error occurred.");
+
+            JOptionPane.showMessageDialog(null, "An error occurred.", "Error", JOptionPane.WARNING_MESSAGE);
             e.printStackTrace();
 
             return null;
@@ -49,44 +63,8 @@ public class Main {
 
     }
 
-//    static void saveUsersInformationToFile(String username, User user) throws IOException {
-//
-//        File fileObj = Main.fileGenerator("usersInformation.properties");
-//
-//        Hashtable<String, String> allInformationDicArray = new Hashtable<String, String>();
-//        Hashtable<String, Hashtable<String, String>> allInformationDic = getUsersInformationFromFile();
-//
-//        for (String key: allInformationDic.keySet()) {
-//
-//            if (!key.equals("admin"))
-//                allInformationDicArray.put(key, convertDicToFileDottedData(key));
-//            else allInformationDicArray.put("admin", "admin.admin.admin.111.Admin.");
-//
-//        }
-//        String[] userInformationArray = user.getUserInformationArray();
-//        String allData = "";
-//
-//        for (String data: userInformationArray) {
-//            allData = allData.concat(data+".");
-//        }
-//        allInformationDicArray.put(username, allData);
-//        if (fileObj != null) {
-//
-//
-//            Properties properties = new Properties();
-//
-//            properties.putAll(allInformationDicArray);
-//
-//            properties.store(new FileOutputStream("usersInformation.properties"), null);
-//
-//
-//        }
-//
-//    }
+    static String convertUserToFileDottedData(User user){
 
-    static String convertUserToFileDottedData(User user) throws IOException {
-
-//        Hashtable<String, String> userDic = user.getUserInformationDic();
         String finalData = "";
         String[] allData = user.getUserInformationArray();
 
@@ -97,39 +75,25 @@ public class Main {
         return finalData;
     }
 
-    static User convertFileDottedDataToUser(String username, String dottedData) throws IOException {
+    static User convertFileDottedDataToUser(String username, String dottedData) throws IOException, ParseException {
 
-        User user = null;
         String[] allData;
         allData = dottedData.split("\\.", -2);
-//        Hashtable<String, String> userDic = new Hashtable<String, String>();
         String name = allData[0];
         String lastName = allData[1];
         String sex = allData[2];
         String id = allData[3];
         String type = allData[4];
 
-//        userDic.put("name", allData[0]);
-//        userDic.put("lastName", allData[1]);
-//        userDic.put("sex", allData[2]);
-//        userDic.put("id", allData[3]);
-//        userDic.put("type", allData[4]);
-
         if (type.equals("Physician")) {
             String record = allData[5];
             String field = allData[6];
             return new Physician(username, "", name, lastName, sex, id, field, record);
-//            userDic.put("record", allData[5]);
-//            userDic.put("field", allData[6]);
         } else if (type.equals("Nurse")) {
             String record = allData[5];
-//            userDic.put("record", allData[5]);
             return new Nurse(username, "", record, name, lastName, sex, id);
 
         } else if (type.equals("Patient")) {
-//            userDic.put("age", allData[5]);
-//            userDic.put("disease", allData[6]);
-//            userDic.put("mode", allData[7]);
 
             String age = allData[5];
             String disease = allData[6];
@@ -142,15 +106,11 @@ public class Main {
 
     }
 
-    static ArrayList<User> getUsersFromFile() throws IOException {
+    static ArrayList<User> getUsersFromFile() throws IOException, ParseException {
 
         File fileObj = Main.fileGenerator("usersInformation.properties");
 
         ArrayList<User> allUsers = new ArrayList<User>();
-
-//        Hashtable<String, Hashtable<String, String>> allInformationDic = new Hashtable<String, Hashtable<String, String>>();
-
-//        boolean isThereAdmin = false;
 
         if (fileObj != null) {
 
@@ -161,7 +121,6 @@ public class Main {
 
             for (String key : properties.stringPropertyNames()) {
 
-//                if (key.equals("admin")) isThereAdmin = true;
 
                 allUsers.add(convertFileDottedDataToUser(key, properties.get(key).toString()));
 
@@ -169,64 +128,10 @@ public class Main {
 
         }
 
-//        if (!isThereAdmin) {
-////            Hashtable<String, String> adminDic = new Hashtable<String, String>();
-//
-//            allUsers.add(new Admin("admin", ""));
-//
-////            adminDic.put("name", "admin");
-////            adminDic.put("lastName", "admin");
-////            adminDic.put("sex", "admin");
-////            adminDic.put("id", "111");
-////            adminDic.put("type", "Admin");
-////
-////            allInformationDic.put("admin", adminDic);
-//        }
-
 
         return allUsers;
 
     }
-//    static Hashtable<String, Hashtable<String, String>> getUsersInformationFromFile() throws IOException {
-//
-//        File fileObj = Main.fileGenerator("usersInformation.properties");
-//
-//        Hashtable<String, Hashtable<String, String>> allInformationDic = new Hashtable<String, Hashtable<String, String>>();
-//
-//        boolean isThereAdmin = false;
-//
-//        if (fileObj != null) {
-//
-//
-//            Properties properties = new Properties();
-//            properties.load(new FileInputStream(fileObj));
-//
-//
-//            for (String key : properties.stringPropertyNames()) {
-//
-//                if (key.equals("admin")) isThereAdmin = true;
-//
-//                allInformationDic.put(key, convertFileDottedDataToDic(properties.get(key).toString()));
-//
-//            }
-//
-//        }
-//
-//        if (!isThereAdmin) {
-//            Hashtable<String, String> adminDic = new Hashtable<String, String>();
-//
-//            adminDic.put("name", "admin");
-//            adminDic.put("lastName", "admin");
-//            adminDic.put("sex", "admin");
-//            adminDic.put("id", "111");
-//            adminDic.put("type", "Admin");
-//
-//            allInformationDic.put("admin", adminDic);
-//        }
-//
-//
-//        return allInformationDic;
-//    }
 
     public static Hashtable<String, String[]> getUserCredentials() throws IOException {
 
@@ -253,48 +158,10 @@ public class Main {
             userCredentialsDicSplit.put(username, userCredentialsDic.get(username).split(" ", -1));
         }
 
-//        userCredentialsDicSplit.put("admin", new String[]{"admin", "Admin"});
-
         return userCredentialsDicSplit;
 
     }
 
-
-//    public static void saveUserCredentials(Hashtable<String, String[]> allData) throws IOException {
-//
-//
-//        File fileObj = fileGenerator("userCredentials.properties");
-//
-//        Hashtable<String, String> savableDic = new Hashtable<String, String>();
-//
-//        if (fileObj != null) {
-//
-//
-//            Properties properties = new Properties();
-//            properties.load(new FileInputStream(fileObj));
-//
-//            boolean isThereAdmin = false;
-//
-//
-//            for (String key : allData.keySet()) {
-//
-//                if (key.equals("admin")) isThereAdmin = true;
-//
-//                String passType = "";
-//                passType = passType.concat(allData.get(key)[0] + " " + allData.get(key)[1]);
-//                savableDic.put(key, passType);
-//            }
-//
-//            if (!isThereAdmin) savableDic.put("admin", "admin Admin");
-//
-//            properties.putAll(savableDic);
-//
-//            properties.store(new FileOutputStream("userCredentials.properties"), null);
-//
-//
-//        }
-//
-//    }
 
     public static void twoFilesGenerator() {
 
@@ -316,150 +183,113 @@ public class Main {
             }
 
         } catch (IOException e) {
-            System.out.println("An error occurred.");
+            JOptionPane.showMessageDialog(null, "An error occurred.", "Error", JOptionPane.WARNING_MESSAGE);
             e.printStackTrace();
         }
 
-
-//        //UserCredentials File
-//
-//        try {
-//            File crFileObj = new File("userCredentials.properties");
-//
-//
-//            if (!crFileObj.exists()){
-//                crFileObj.createNewFile();
-//                FileWriter writer = new FileWriter("userCredentials.properties");
-//                writer.write("admin=admin Admin");
-//                writer.close();
-//            }
-//        } catch (IOException e) {
-//            System.out.println("An error occurred.");
-//            e.printStackTrace();
-//        }
-//
-//        //UserInformation File
-//
-//        try {
-//            File infFileObj = new File("usersInformation.properties");
-//
-//
-//            if (!infFileObj.exists()){
-//                infFileObj.createNewFile();
-//                FileWriter writer = new FileWriter("usersInformation.properties");
-//                writer.write("admin=admin.admin.admin.000.Admin.");
-//                writer.close();
-//            }
-//        } catch (IOException e) {
-//            System.out.println("An error occurred.");
-//            e.printStackTrace();
-//        }
-//
-//        //Links File
-//
-//        try {
-//            File linksFileObj = new File("links.properties");
-//
-//            if (!linksFileObj.exists()){
-//                linksFileObj.createNewFile();
-//            }
-//        } catch (IOException e) {
-//            System.out.println("An error occurred.");
-//            e.printStackTrace();
-//        }
-//
-//        //DataArrays File
-//
-//        try {
-//            File dataArraysFileObj = new File("dataArrays.properties");
-//
-//            if (!dataArraysFileObj.exists()){
-//                dataArraysFileObj.createNewFile();
-//            }
-//        } catch (IOException e) {
-//            System.out.println("An error occurred.");
-//            e.printStackTrace();
-//        }
-
     }
 
-
-    public static loginReturn login() throws IOException {
+    public static loginReturn login() throws IOException, ParseException {
 
         twoFilesGenerator();
 
         Hashtable<String, String[]> userCredentialsDicSplit = getUserCredentials();
 
+        JTextField Username = new JTextField();
+        JTextField Password = new JPasswordField();
+        Object[] message = {
+                "Username: ", Username,
+                "Password: ", Password
+        };
 
-        System.out.println("Please Enter Username: ");
+        String username;
+        String password;
+        ImageIcon loginIcon = new ImageIcon("loginIcon.png");
 
-        String username = scanner.nextLine();
+        while (true) {
+            int option = JOptionPane.showConfirmDialog(null, message, "Login", JOptionPane.OK_CANCEL_OPTION, JOptionPane.INFORMATION_MESSAGE, loginIcon);
+            if (option == JOptionPane.OK_OPTION) {
+                username = Username.getText();
+                password = Password.getText();
+                break;
+            } else {
+                int exit = JOptionPane.showConfirmDialog(null, "Do you want to exit?", "Exit", JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
+                if (exit == 0) {
+                    System.exit(0);
+                }
+            }
 
-        System.out.println("Please enter password: ");
-
-        String password = scanner.nextLine();
+        }
 
         User user = null;
         boolean userFound = false;
         boolean wrongPassword = false;
 
 
-        if (username.equals("admin")) {
-
-            userFound = true;
-
-            if (password.equals("admin")) {
-                user = new Admin(username, password);
-            } else wrongPassword = true;
-
-        }
-
-        else {
             for (String checkUsername : userCredentialsDicSplit.keySet()) {
                 if (checkUsername.equals(username)) {
                     userFound = true;
                     String userPassword = userCredentialsDicSplit.get(checkUsername)[0];
 
-//                    String userType = userCredentialsDicSplit.get(checkUsername)[1];
-
                     if (userPassword.equals(password)) {
 
-//                        user = User.getUserObjFromFile(username, UserType.valueOf(userType));
-                        user = new Admin("admin", "").getUserObj(username);
+                        if (username.equals("admin")) {
+                            user = new Admin(username, password);
+                        } else {
+                            user = new Admin("admin", "").getUserObj(username);
+                        }
                         break;
 
                     } else wrongPassword = true;
 
                 }
             }
-        }
+//        }
 
         return new loginReturn(user, userFound, wrongPassword, username);
 
     }
 
-    public static void main(String[] args) throws IOException {
+    static void goBack() {
+        System.out.print("<-Press Enter to go back->");
+        Main.scanner.nextLine();
+    }
+
+    static String getPassword() {
+
+        String password = " ";
+
+        while (password.contains(" ") || Admin.checkPassword(password)) {
+            password = JOptionPane.showInputDialog(null, "Please enter Password: ", "Password of new user", JOptionPane.PLAIN_MESSAGE);
+            if (password == null)
+                return password;
+            if (password.contains(" ") || Admin.checkPassword(password)){
+                String passwordError = "password shouldn't include whitespaces and must contains\n" +
+                        "at least one of these characters!: @#$%&*";
+                JOptionPane.showMessageDialog(null, passwordError, "Invalid Password", JOptionPane.ERROR_MESSAGE);
+            }
+
+        }
+
+        return password;
+    }
+
+    public static void main(String[] args) throws IOException, ParseException {
 
         try {
             Main.sessionData = MainPackage.sessionData.getSessionData();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ParseException e) {
+        } catch (IOException | ParseException e) {
             e.printStackTrace();
         }
-
-        System.out.println("Welcome :)\n\n");
 
 
         Hashtable<String, ArrayList<Object>> triedUsers = new Hashtable<String, ArrayList<Object>>();
 
-        User newUser = null;
+        User newUser;
 
         while (true) {
 
-            System.out.println("**If you want to exit program leave username empty**");
+            Main.sessionData.readFiles();
 
             loginReturn loginReturn = login();
 
@@ -467,13 +297,13 @@ public class Main {
                 break;
 
             if (!loginReturn.userFound) {
-                System.out.println("No user found with this username!");
+                JOptionPane.showMessageDialog(null, "No user found with this username!", "Invalid Username", JOptionPane.WARNING_MESSAGE);
             } else if (loginReturn.wrongPassword || (triedUsers.containsKey(loginReturn.username) && (Integer) triedUsers.get(loginReturn.username).get(0) >= 3)) {
 
                 if (triedUsers.containsKey(loginReturn.username)) {
 
                     if (loginReturn.wrongPassword)
-                        System.out.println("Wrong password!\n");
+                        JOptionPane.showMessageDialog(null, "Wrong password!", "Invalid Password", JOptionPane.WARNING_MESSAGE);
 
                     triedUsers.get(loginReturn.username).set(0, (Integer) triedUsers.get(loginReturn.username).get(0) + 1);
 
@@ -481,7 +311,7 @@ public class Main {
 
                         triedUsers.get(loginReturn.username).set(1, System.currentTimeMillis());
 
-                        System.out.println("Your account has been locked for 2 minutes.\n");
+                        JOptionPane.showMessageDialog(null, "Your account has been locked for 2 minutes.", "Locked Account", JOptionPane.WARNING_MESSAGE);
 
                     } else if ((Integer) triedUsers.get(loginReturn.username).get(0) > 3) {
 
@@ -492,30 +322,26 @@ public class Main {
                         if ( timeDifference / 1000 >= 120) {
                             triedUsers.remove(loginReturn.username);
                         } else {
-                            System.out.println("Please try " + (120 - (timeDifference / 1000)) + " second later.\n");
+                            String messageLocked = "Please try " + (120 - (timeDifference / 1000)) + " second later.";
+                            JOptionPane.showMessageDialog(null, messageLocked, "Locked Account", JOptionPane.WARNING_MESSAGE);
                         }
                     }
 
                 } else {
-                    System.out.println("Wrong password!\n");
+                    JOptionPane.showMessageDialog(null, "Wrong password!", "Invalid Password", JOptionPane.WARNING_MESSAGE);
                     ArrayList<Object> list = new ArrayList<Object>();
                     list.add(1);
                     list.add(System.currentTimeMillis());
                     triedUsers.put(loginReturn.username, list);
                 }
             } else {
+                triedUsers.clear();
+                Main.sessionData = MainPackage.sessionData.getSessionData();
                 newUser = loginReturn.user;
-
                 newUser.Menu();
-
             }
 
         }
-
-//        if (newUser.type == UserType.Admin){
-//
-//        }
-
 
     }
 
