@@ -1,11 +1,7 @@
-package MainPackage;
-
 import javax.swing.*;
-import java.awt.*;
 import java.io.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.chrono.JapaneseDate;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -252,7 +248,7 @@ class Admin extends User {
                 allUsersArray,
         };
 
-        ImageIcon allUsersIcon = new ImageIcon("allUsersIcon.png");
+        ImageIcon allUsersIcon = new ImageIcon(this.getClass().getResource("allUsersIcon.png"));
         JOptionPane.showMessageDialog(null, message, "All Users", JOptionPane.PLAIN_MESSAGE, allUsersIcon);
 
     }
@@ -292,7 +288,7 @@ class Admin extends User {
                 allUsersArray,
         };
 
-        ImageIcon allUsersIcon = new ImageIcon("allUsersIcon.png");
+        ImageIcon allUsersIcon = new ImageIcon(this.getClass().getResource("allUsersIcon.png"));
         JOptionPane.showMessageDialog(null, message, "Searching for user", JOptionPane.PLAIN_MESSAGE, allUsersIcon);
 
     }
