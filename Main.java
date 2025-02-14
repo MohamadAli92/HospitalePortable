@@ -1,5 +1,3 @@
-package MainPackage;
-
 import java.io.*;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -204,7 +202,7 @@ public class Main {
 
         String username;
         String password;
-        ImageIcon loginIcon = new ImageIcon("loginIcon.png");
+        ImageIcon loginIcon = new ImageIcon(Main.class.getResource("loginIcon.png"));
 
         while (true) {
             int option = JOptionPane.showConfirmDialog(null, message, "Login", JOptionPane.OK_CANCEL_OPTION, JOptionPane.INFORMATION_MESSAGE, loginIcon);
@@ -277,7 +275,7 @@ public class Main {
     public static void main(String[] args) throws IOException, ParseException {
 
         try {
-            Main.sessionData = MainPackage.sessionData.getSessionData();
+            Main.sessionData = sessionData.getSessionData();
         } catch (IOException | ParseException e) {
             e.printStackTrace();
         }
@@ -336,7 +334,7 @@ public class Main {
                 }
             } else {
                 triedUsers.clear();
-                Main.sessionData = MainPackage.sessionData.getSessionData();
+                Main.sessionData = sessionData.getSessionData();
                 newUser = loginReturn.user;
                 newUser.Menu();
             }
