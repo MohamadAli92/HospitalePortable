@@ -15,12 +15,10 @@ public class sessionData {
     ArrayList<String> patientsArchive = new ArrayList<String>();
     ArrayList<Patient> dischargedPatients = new ArrayList<Patient>();
     Hashtable<String, ArrayList<String>> specializations;
+    Hashtable<String, Hashtable<String, String>> receivedMessages;
 
 
-//    void addPatientForAdmin() {
-//
-//    }
-    private Hashtable<Physician, ArrayList<Patient>> readFromLinksFile() throws IOException {
+    private Hashtable<Physician, ArrayList<Patient>> readFromLinksFile() throws IOException, ParseException {
 
         File fileObj = Main.fileGenerator("links.properties");
 
@@ -74,8 +72,6 @@ public class sessionData {
 
                 Patient patient = (Patient) admin.getUserById(patientId);
 
-//                Date date=new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy").parse((String) properties.get(patientId));
-
                 tempPatientsDate.put(patient, new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy").parse((String) properties.get(patientId)));
 
             }
@@ -87,7 +83,7 @@ public class sessionData {
 
     }
 
-    private void readThreeArrays() throws IOException {
+    private void readThreeArrays() throws IOException, ParseException {
 
         File fileObj = Main.fileGenerator("dataArrays.properties");
 
@@ -108,21 +104,11 @@ public class sessionData {
                     allPatients.add((Patient) user);
             }
 
+            this.patientsArchive = new ArrayList<String>();
+            this.dischargedPatients = new ArrayList<Patient>();
+
             for (String type : properties.stringPropertyNames()) {
 
-
-
-//                if (type.equals("allPatients")) {
-//
-//                    String[] patientsId = properties.get(type).toString().split("\\.", -2);
-//
-//                    for (String patientId : patientsId) {
-//
-//                        allPatients.add((Patient) admin.getUserById(patientId));
-//
-//                    }
-//
-//                }
                 if (type.equals("patientsArchive")) {
 
                     String[] patientsArchiveArray = properties.get(type).toString().split("\\.", -2);
@@ -182,12 +168,47 @@ public class sessionData {
 
     }
 
+    private Hashtable<String, Hashtable<String, String>> readFromReceivedMsgFile() throws IOException {
+
+        File fileObj = Main.fileGenerator("receivedMsg.properties");
+
+        Hashtable<String, Hashtable<String, String>> tempReceivedMsg = new Hashtable<String, Hashtable<String, String>>();
+
+        if (fileObj != null) {
+
+
+            Properties properties = new Properties();
+            properties.load(new FileInputStream(fileObj));
+
+            for (String userId : properties.stringPropertyNames()) {
+
+                String[] userMessagesAndSenderIdArray = properties.get(userId).toString().split("@@@", -2);
+
+                Hashtable<String, String> userMessagesAndSenderIdTable = new Hashtable<String, String>();
+
+                for (String messageAndSenderId : userMessagesAndSenderIdArray)
+                    if (!messageAndSenderId.isEmpty()) {
+
+                        String message = messageAndSenderId.split("##", -2)[0];
+                        String senderId = messageAndSenderId.split("##", -2)[1];
+
+                        userMessagesAndSenderIdTable.put(senderId, message);
+
+                    }
+
+                tempReceivedMsg.put(userId, userMessagesAndSenderIdTable);
+
+            }
+
+        }
+
+        return tempReceivedMsg;
+
+    }
+
     private sessionData() throws IOException, ParseException {
 
-        specializations = this.readFromConfigFile();
-        linkedPhysicianToPatients = this.readFromLinksFile();
-        allPatientsDate = this.readFromDatesFile();
-        this.readThreeArrays();
+        this.readFiles();
 
     }
 
@@ -214,6 +235,7 @@ public class sessionData {
 
             }
 
+            properties.clear();
             properties.putAll(savableDic);
 
             properties.store(new FileOutputStream("links.properties"), null);
@@ -240,6 +262,7 @@ public class sessionData {
 
             }
 
+            properties.clear();
             properties.putAll(savableDic);
 
             properties.store(new FileOutputStream("dates.properties"), null);
@@ -289,6 +312,7 @@ public class sessionData {
             }
 
 
+            properties.clear();
             properties.putAll(savableDic);
 
 
@@ -299,11 +323,62 @@ public class sessionData {
 
     }
 
+    private void saveToReceivedMsgFile() throws IOException {
+
+        File fileObj = Main.fileGenerator("receivedMsg.properties");
+
+        if (fileObj != null) {
+
+
+            Properties properties = new Properties();
+            properties.load(new FileInputStream(fileObj));
+
+            Hashtable<String, String> savableDic = new Hashtable<String,String>();
+
+            for (String userId : receivedMessages.keySet()) {
+
+                String userMessages = "";
+
+                for (String senderId : receivedMessages.get(userId).keySet()) {
+
+                    userMessages = userMessages.concat(receivedMessages.get(userId).get(senderId) + "##" + senderId + "@@@");
+
+                }
+
+                savableDic.put(userId, userMessages);
+
+//                for (String message : receivedMessages.get(userId))
+//                    stringOfStrings = stringOfStrings.concat(message + "@" + m);
+
+//                savableDic.put(userId, stringOfStrings);
+
+            }
+
+            properties.clear();
+            properties.putAll(savableDic);
+
+            properties.store(new FileOutputStream("receivedMsg.properties"), null);
+
+        }
+
+    }
+
+    void readFiles() throws IOException, ParseException {
+
+        specializations = this.readFromConfigFile();
+        linkedPhysicianToPatients = this.readFromLinksFile();
+        allPatientsDate = this.readFromDatesFile();
+        receivedMessages = this.readFromReceivedMsgFile();
+        this.readThreeArrays();
+
+    }
+
     void saveFiles() throws IOException {
 
         this.saveToLinksFile();
         this.saveThreeArrays();
         this.saveToDatesFile();
+        this.saveToReceivedMsgFile();
 
     }
 
